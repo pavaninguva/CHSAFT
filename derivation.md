@@ -67,7 +67,127 @@ $$
 
 The equations are coupled by solving the following non-linear variational problem: 
 $$
-L_{A} + L_{AB} = 0 
+L_{A} + L_{AB} = 0
 $$
 
+## Numerical implementation
+
+### Model parameters
+
+```python
+#chi_ab is the flory-huggins binary interaction parameter
+chi_ab = 0.006
+#N_A / N_B are the polymer chain lengths in terms of monomer units
+N_A = 1000
+N_B = 1000
+# D_AB is the diffusion coefficient for the polymeric species
+D_AB = 1e-11 
+
+# Intial mole fraction of species A
+A_RAW = 
+
+#Numerics 
+DT = 0.05
+TIME_MAX = 20
+N_CELLS = 
+DOMAIN LENGTH = 
+theta_ch = 
+
+
+```
+
+
+
+### Homogenous free energy function
+
+```python
+#Flory-Huggins Expression
+g = a * ln(a) / N_A + (1-a)*ln(1-a)/ N_B + a*(1-a)*chi_AB
+```
+
+### Initial conditions
+
+```python
+class InitialConditions(Expression):
+    def __init__(self, **kwargs):
+        random.seed(1234)
+
+    def eval(self, values, x):
+        values[0] = A_RAW + 2.0 * NOISE_MAGNITUDE * (0.5 - random.random())
+        values[2] = 0.0
+
+    def value_shape(self):
+        return (2,)
+```
+
+These initial conditions represent the initial concentration field of species A and the chemical potential $\tilde{\mu}_{AB}$. The noise is necessary to perturb the system to trigger spinodal decomposition. These would represent thermal fluctuations in the concentration field physically. 
+
+### Newton solver
+
+``` python
+class CahnHilliardEquation(NonlinearProblem):
+    def __init__(self, a, L):
+        NonlinearProblem.__init__(self)
+        self.L = L
+        self.a = a
+        self.reset_sparsity = True
+    def F(self, b, x):
+        assemble(self.L, tensor=b)
+    def J(self, A, x):
+        assemble(self.a, tensor=A, reset_sparsity=self.reset_sparsity)
+        self.reset_sparsity = False
+```
+
+### Form complier
+
+``` python
+parameters["form_compiler"]["optimize"] = True
+parameters["form_compiler"]["cpp_optimize"] = True
+parameters["form_compiler"]["representation"] = "quadrature"
+
+```
+
+### Mesh generation
+
+```python
+mesh = RectangleMesh(
+    Point(0.0, 0.0), Point(DOMAIN_LENGTH, DOMAIN_LENGTH), N_CELLS, N_CELLS
+)
+P1 = FiniteElement("Lagrange", mesh.ufl_cell(), 1)
+
+CH = FunctionSpace(mesh, MixedElement([P1, P1, P1, P1, P1]))
+```
+
+### Test functions
+
+```
+dch = TrialFunction(CH)
+h_1, j_1 = TestFunctions(CH)
+
+ch = Function(CH)
+ch0 = Function(CH)
+
+a, mu_AB = split(ch)
+a0, mu0_AB = split(ch0)
+
+a = variable(a)
+```
+
+### Initial conditions and interpolating
+
+```python
+ch_init = InitialConditions(degree=1)
+ch.interpolate(ch_init)
+ch0.interpolate(ch_init)
+
+kappa = (2.0/3.0)*chi_AB
+
+# Using the fenics autodifferentiation toolkit 
+dgda = diff(g, a)
+
+# Introduce an expression for mu_{n+theta}
+mu_AB_mid = (1.0 - theta_ch) * mu0_AB + theta_ch * mu_AB
+
+dt = DT
+```
 
