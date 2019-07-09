@@ -2,40 +2,40 @@ import random
 from dolfin import *
 import numpy as np
 
-from common.constants import (
-    chi_AB,
-    chi_AC,
-    chi_BC,
-    D_AB,
-    D_AC,
-    D_BC,
-    N_A,
-    N_B,
-    N_C,
-    kappa_AA,
-    kappa_BB,
-    kappa_AB,
-    theta_ch,
-    maximum_iterations,
-    relaxation_parameter,
-    convergence_criterion,
-    absolute_tolerance,
-    relative_tolerance,
-    N_SCALE_OPTION,
-    D_SCALE_OPTION,
-    use_ramp,
-    step_duration,
-    n_steps,
-    mult_start,
-    mult_end,
-    A_RAW,
-    B_RAW,
-    NOISE_MAGNITUDE,
-    DT,
-    N_CELLS,
-    DOMAIN_LENGTH,
-    TIME_MAX
-)
+# from common.constants import (
+chi_AB = 0.005
+chi_AC = 0.005
+chi_BC = 0.005
+D_AB = 1e-11
+D_AC = 1e-11
+D_BC = 1e-11
+N_A = 1000
+N_B = 1000
+N_C = 1000
+# kappa_AA 
+# kappa_BB,
+# kappa_AB,
+theta_ch = 0.5
+maximum_iterations = 30
+# relaxation_parameter,
+# convergence_criterion,
+# absolute_tolerance,
+# relative_tolerance,
+N_SCALE_OPTION = N_A
+D_SCALE_OPTION = D_AB
+# use_ramp,
+# step_duration,
+# n_steps,
+# mult_start,
+# mult_end,
+A_RAW = 0.3
+B_RAW = 0.3
+NOISE_MAGNITUDE = 0.03
+DT = 0.1
+N_CELLS = 80
+DOMAIN_LENGTH = 40
+TIME_MAX = 5
+# )
 
 
 # Class representing the intial conditions
@@ -215,7 +215,7 @@ while t < TIME_MAX:
     t += dt
 
     if MPI.rank(mpi_comm_world()) == 0:
-        print "Timestep", timestep, "Time", t
+        print ("Timestep", timestep, "Time", t)
 
 
     ch0.vector()[:] = ch.vector()
