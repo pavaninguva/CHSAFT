@@ -1,0 +1,50 @@
+name: sim
+channels:
+  - defaults
+dependencies:
+  - ca-certificates=2018.03.07=0
+  - certifi=2018.4.16=py36_0
+  - libedit=3.1.20170329=h6b74fdf_2
+  - libffi=3.2.1=hd88cf55_4
+  - libgcc-ng=7.2.0=hdf63c60_3
+  - libstdcxx-ng=7.2.0=hdf63c60_3
+  - ncurses=6.1=hf484d3e_0
+  - openssl=1.0.2o=h20670df_0
+  - pip=10.0.1=py36_0
+  - python=3.6.6=hc3d631a_0
+  - readline=7.0=ha6073c6_4
+  - setuptools=39.2.0=py36_0
+  - sqlite=3.24.0=h84994c4_0
+  - tk=8.6.7=hc745277_3
+  - wheel=0.31.1=py36_0
+  - xz=5.2.4=h14c3975_4
+  - zlib=1.2.11=ha838bed_2
+  - pip:
+    - atomicwrites==1.1.5
+    - attrs==18.1.0
+    - cached-property==1.4.3
+    - cffi==1.11.5
+    - chardet==3.0.4
+    - docker==3.5.0
+    - docker-compose==1.22.0
+    - docker-pycreds==0.3.0
+    - dockerpty==0.4.1
+    - docopt==0.6.2
+    - idna==2.6
+    - jsonschema==2.6.0
+    - more-itertools==4.3.0
+    - numpy==1.14.5
+    - pluggy==0.7.1
+    - py==1.5.4
+    - pycparser==2.18
+    - pygit2==0.27.0
+    - pymongo==3.7.1
+    - pytest==3.7.1
+    - pyyaml==3.13
+    - requests==2.18.4
+    - six==1.11.0
+    - texttable==0.9.1
+    - urllib3==1.22
+    - websocket-client==0.48.0
+prefix: /home/pav/miniconda3/envs/sim
+

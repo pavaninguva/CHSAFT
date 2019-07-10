@@ -1,2 +1,8 @@
 # Mac folder shit
 *.DS_Store
+
+
+# Simulation Results 
+*.pvd
+*.vtu
+*.png
