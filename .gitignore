@@ -6,3 +6,15 @@
 *.pvd
 *.vtu
 *.png
+*.jpg
+*.gif
+
+# Data files
+*.csv
+*.dat
+*.xls*
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
