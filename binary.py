@@ -4,10 +4,11 @@
 # numpy is for general operations
 import random
 from dolfin import *
-import numpy as np
-import matplotlib
-matplotlib.use('agg')
-import matplotlib.pyplot as plt
+from cbcpost import *
+# import numpy as np
+# import matplotlib
+# matplotlib.use('agg')
+# import matplotlib.pyplot as plt
 
 
 #chi_ab is the flory-huggins binary interaction parameter
@@ -22,25 +23,14 @@ D_AB = 1e-11
 A_RAW = 0.5
 
 #Numerics 
-DT = 0.05
+DT = 1
 TIME_MAX = 20
 N_CELLS = 80
 DOMAIN_LENGTH = 40
 theta_ch = 0.5
 NOISE_MAGNITUDE = 0.03
 N=int(N_CELLS)
-
-
-class InitialConditions(Expression):
-    def __init__(self, **kwargs):
-        random.seed(1234)
-
-    def eval(self, values, x):
-        values[0] = A_RAW + 2.0 * NOISE_MAGNITUDE * (0.5 - random.random())
-        values[1] = 0.0
-
-    def value_shape(self):
-        return (2,)
+MESH_TYPE = structured
 
 class CahnHilliardEquation(NonlinearProblem):
     def __init__(self, a, L):
@@ -58,26 +48,96 @@ parameters["form_compiler"]["optimize"] = True
 parameters["form_compiler"]["cpp_optimize"] = True
 # parameters["form_compiler"]["representation"] = "quadrature"
 
-# This can be used to generate a structured mesh
-mesh = RectangleMesh(
-    Point(0.0, 0.0), Point(DOMAIN_LENGTH, DOMAIN_LENGTH), N_CELLS, N_CELLS
-)
-# This is used to generated an unstructured mesh
-# mesh = Mesh()
+# INITIAL AND BOUNDARY CONDITIONS OF THE PROBLEM #
 
-# domain_vertices = [
-#                 Point(0.0, 0.0),
-#                 Point(DOMAIN_LENGTH, 0.0),
-#                 Point(DOMAIN_LENGTH, DOMAIN_LENGTH),
-#                 Point(0.0, DOMAIN_LENGTH),
-#             ]
+# Initial conditions which include random noise as a perturbation
 
-# domain = Polygon(domain_vertices)
+class InitialConditions(Expression):
+    def __init__(self, **kwargs):
+        random.seed(1234)
 
-# mesh = generate_mesh(domain, N)
+    def eval(self, values, x):
+        values[0] = A_RAW + 2.0 * NOISE_MAGNITUDE * (0.5 - random.random())
+        values[1] = 0.0
+
+    def value_shape(self):
+        return (2,)
+
+# Setting up Mesh and Periodic Boundary Conditions #
+
+## Setting up periodic boundary conditions. 
+
+## We are creating classes for defining the various parts of the boundaries (top, bottom, left and right)
+
+class LeftBoundary(SubDomain):
+    def inside(self, x, on_boundary):
+        return on_boundary and near(x[0], 0.0)
 
 
-# plot(mesh, interactive=True)
+class RightBoundary(SubDomain):
+    def inside(self, x, on_boundary):
+        return on_boundary and near(x[0], DOMAIN_LENGTH)
+
+
+class BottomBoundary(SubDomain):
+    def inside(self, x, on_boundary):
+        return on_boundary and near(x[1], 0.0)
+
+
+class TopBoundary(SubDomain):
+    def inside(self, x, on_boundary):
+        return on_boundary and near(x[1], DOMAIN_LENGTH)
+
+
+class PeriodicBoundary(SubDomain):
+    def inside(self, x, on_boundary):
+        return on_boundary and (near(x[0], 0.0))
+
+    # Map RightBoundary to LeftBoundary
+    def map(self, x, y):
+        y[0] = x[0] - DOMAIN_LENGTH
+        y[1] = x[1]
+
+
+def __init__(self, params=None):
+        CHProblem.__init__(self, params)
+
+        # mesh resolution
+        N = int(N_CELLS)
+
+        if MESH_TYPE == "structured":
+            mesh = RectangleMesh(
+                Point(0.0, 0.0), Point(DOMAIN_LENGTH, DOMAIN_LENGTH), N, N
+            )
+        else:
+            domain_vertices = [
+                Point(0.0, 0.0),
+                Point(DOMAIN_LENGTH, 0.0),
+                Point(DOMAIN_LENGTH, DOMAIN_LENGTH),
+                Point(0.0, DOMAIN_LENGTH),
+            ]
+
+            domain = Polygon(domain_vertices)
+            mesh = generate_mesh(domain, N)
+
+        # Create boundary markers
+        facet_domains = FacetFunction("size_t", mesh)
+        facet_domains.set_all(4)  # set N_markers+1
+        # Wall().mark(facet_domains, 0)
+
+        self.left_boundary_id = 0
+        self.right_boundary_id = 1
+        self.bottom_boundary_id = 2
+        self.top_boundary_id = 3
+
+        LeftBoundary().mark(facet_domains, 0)
+        RightBoundary().mark(facet_domains, 1)
+        BottomBoundary().mark(facet_domains, 2)
+        TopBoundary().mark(facet_domains, 3)
+
+        # Store mesh and markers
+        self.initialize_geometry(mesh, facet_domains=facet_domains)
+
 
 P1 = FiniteElement("Lagrange", mesh.ufl_cell(), 1)
 
@@ -110,17 +170,6 @@ g = ( x_a * ln(x_a) / N_A ) + ((1.0-x_a)*ln(1-x_a)/ N_B) + x_a*(1.0-x_a)*chi_AB
 # Using the fenics autodifferentiation toolkit 
 dgdx_a = diff(g,x_a)
 
-# Plot Gibbs energy functional and derivative
-
-# molfracs = np.arange(0.0, 2.0, 0.01)
-# fig, ax = plt.subplots()
-# line1, = ax.plot (molfracs, g, label ='Gibbs energy of mixing')
-# # line2, = ax.plot(x, dgdx_a, label='Derivative')
-# ax.set(xlabel='mole fraction of A', ylabel='Energy')
-# fig.savefig('gibbs.png')
-# plt.show()
-
-# Introduce an expression for mu_{n+theta}
 mu_AB_mid = (1.0 - theta_ch) * mu0_AB + theta_ch * mu_AB
 
 dt = DT
@@ -145,19 +194,20 @@ a = derivative(F, ch, dch)
 problem = CahnHilliardEquation(a, F)
 solver = NewtonSolver()
 solver.parameters["linear_solver"] = "lu"
-solver.parameters["convergence_criterion"] = "incremental"
+solver.parameters["convergence_criterion"] = "residual"
 solver.parameters["relative_tolerance"] = 1e-6
 
-file_a = File("concentration_A.pvd", "compressed")
+# file_a = File("concentration_A.pvd", "compressed")
 
-t = 0.0
+# t = 0.0
 
-while (t < TIME_MAX):
-    print (t)
-    t += dt
-    ch0.vector()[:] = ch.vector()
-    solver.solve(problem, ch.vector())
-    file_a << (ch.split()[0], t)
+# while (t < TIME_MAX):
+#     print (t)
+#     t += dt
+#     ch0.vector()[:] = ch.vector()
+#     solver.solve(problem, ch.vector())
+#     file_a << (ch.split()[0], t)
 
-plot(ch.split()[0])
-interactive()
+#Creating postprocessor instance pointing to a case directory. 
+casedir = "output_RESULTS" 
+postprocessor = PostProcessor({"casedir": casedir})
