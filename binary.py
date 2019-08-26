@@ -165,7 +165,7 @@ ch0.interpolate(ch_init)
 kappa = (2.0/3.0)*chi_AB
 
 #Flory-Huggins Expression
-g = ( x_a * ln(x_a) / N_A ) + ((1.0-x_a)*ln(1-x_a)/ N_B) + x_a*(1.0-x_a)*chi_AB
+g = ( x_a * ln(x_a) / N_A ) + ((1.0-x_a)*ln(1-x_a)/ N_B) + x_a*(1.0-x_a)*chi_AB #TO DO: Shift this to a master script
 
 # Using the fenics autodifferentiation toolkit 
 dgdx_a = diff(g,x_a)
@@ -197,17 +197,29 @@ solver.parameters["linear_solver"] = "lu"
 solver.parameters["convergence_criterion"] = "residual"
 solver.parameters["relative_tolerance"] = 1e-6
 
-# file_a = File("concentration_A.pvd", "compressed")
+# Setting up post processor
 
-# t = 0.0
-
-# while (t < TIME_MAX):
-#     print (t)
-#     t += dt
-#     ch0.vector()[:] = ch.vector()
-#     solver.solve(problem, ch.vector())
-#     file_a << (ch.split()[0], t)
-
-#Creating postprocessor instance pointing to a case directory. 
 casedir = "output_RESULTS" 
 postprocessor = PostProcessor({"casedir": casedir})
+
+plot_and_save = dict(plot=False, save=True, stride_timestep=20)
+    fields = [
+        Concentration_A(plot_and_save)
+    ]
+
+    # Add fields to postprocessor
+    postprocessor.add_fields(fields)
+
+# Setting up time stepping and solving
+
+t = 0.0
+
+while (t < TIME_MAX):
+    print (t)
+    t += dt
+    ch0.vector()[:] = ch.vector()
+    solver.solve(problem, ch.vector())
+    # It seems this is the line to link up the relevant field to the postprocesser field
+    postprocessor.update_all ({"Concentration_A": lambda: x_a}, t)
+    
+pp.finalize_all()
