@@ -202,13 +202,18 @@ solver.parameters["relative_tolerance"] = 1e-6
 casedir = "output_RESULTS" 
 postprocessor = PostProcessor({"casedir": casedir})
 
-plot_and_save = dict(plot=False, save=True, stride_timestep=20)
-    fields = [
-        Concentration_A(plot_and_save)
-    ]
+# plot_and_save = dict(plot=False, save=True, stride_timestep=20)
+#     fields = [
+#         Concentration_A(plot_and_save)
+#     ]
+#     # Add fields to postprocessor
+#     postprocessor.add_fields(fields)
 
-    # Add fields to postprocessor
-    postprocessor.add_fields(fields)
+postprocesser.add_field(SolutionField("Concentration_A", dict(save=True,
+                                save_as=["hdf5", "xdmf"],
+                                plot=False,
+                                stride_timestep=20
+                                )))
 
 # Setting up time stepping and solving
 
