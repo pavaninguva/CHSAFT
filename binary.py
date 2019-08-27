@@ -30,7 +30,7 @@ DOMAIN_LENGTH = 40
 theta_ch = 0.5
 NOISE_MAGNITUDE = 0.03
 N=int(N_CELLS)
-MESH_TYPE = structured
+MESH_TYPE = "structured"
 
 class CahnHilliardEquation(NonlinearProblem):
     def __init__(self, a, L):
@@ -56,6 +56,8 @@ class InitialConditions(Expression):
     def __init__(self, **kwargs):
         random.seed(1234)
 
+    # [0] corresponds to the concentration field for species A 
+    # [1] coresponds to the \mu_{AB} field
     def eval(self, values, x):
         values[0] = A_RAW + 2.0 * NOISE_MAGNITUDE * (0.5 - random.random())
         values[1] = 0.0
@@ -99,57 +101,75 @@ class PeriodicBoundary(SubDomain):
         y[1] = x[1]
 
 
-def __init__(self, params=None):
-        CHProblem.__init__(self, params)
+# def __init__(self, params=None):
+#         CHProblem.__init__(self, params)
 
-        # mesh resolution
-        N = int(N_CELLS)
+#         # mesh resolution
+#         N = int(N_CELLS)
 
-        if MESH_TYPE == "structured":
-            mesh = RectangleMesh(
-                Point(0.0, 0.0), Point(DOMAIN_LENGTH, DOMAIN_LENGTH), N, N
-            )
-        else:
-            domain_vertices = [
-                Point(0.0, 0.0),
-                Point(DOMAIN_LENGTH, 0.0),
-                Point(DOMAIN_LENGTH, DOMAIN_LENGTH),
-                Point(0.0, DOMAIN_LENGTH),
-            ]
+#         if MESH_TYPE == "structured":
+#             mesh = RectangleMesh(
+#                 Point(0.0, 0.0), Point(DOMAIN_LENGTH, DOMAIN_LENGTH), N, N
+#             )
+#         else:
+#             domain_vertices = [
+#                 Point(0.0, 0.0),
+#                 Point(DOMAIN_LENGTH, 0.0),
+#                 Point(DOMAIN_LENGTH, DOMAIN_LENGTH),
+#                 Point(0.0, DOMAIN_LENGTH),
+#             ]
 
-            domain = Polygon(domain_vertices)
-            mesh = generate_mesh(domain, N)
+#             domain = Polygon(domain_vertices)
+#             mesh = generate_mesh(domain, N)
 
-        # Create boundary markers
-        facet_domains = FacetFunction("size_t", mesh)
-        facet_domains.set_all(4)  # set N_markers+1
-        # Wall().mark(facet_domains, 0)
+#         # Create boundary markers
+#         facet_domains = FacetFunction("size_t", mesh)
+#         facet_domains.set_all(4)  # set N_markers+1
+#         # Wall().mark(facet_domains, 0)
 
-        self.left_boundary_id = 0
-        self.right_boundary_id = 1
-        self.bottom_boundary_id = 2
-        self.top_boundary_id = 3
+#         self.left_boundary_id = 0
+#         self.right_boundary_id = 1
+#         self.bottom_boundary_id = 2
+#         self.top_boundary_id = 3
 
-        LeftBoundary().mark(facet_domains, 0)
-        RightBoundary().mark(facet_domains, 1)
-        BottomBoundary().mark(facet_domains, 2)
-        TopBoundary().mark(facet_domains, 3)
+#         LeftBoundary().mark(facet_domains, 0)
+#         RightBoundary().mark(facet_domains, 1)
+#         BottomBoundary().mark(facet_domains, 2)
+#         TopBoundary().mark(facet_domains, 3)
 
-        # Store mesh and markers
-        self.initialize_geometry(mesh, facet_domains=facet_domains)
+#         # Store mesh and markers
+#         self.initialize_geometry(mesh, facet_domains=facet_domains)
 
 
-P1 = FiniteElement("Lagrange", mesh.ufl_cell(), 1)
+N = int(N_CELLS)
 
-# CH = FunctionSpace(mesh, MixedElement([P1, P1, P1, P1, P1]))
+if MESH_TYPE == "structured":
+    mesh = RectangleMesh(
+        Point(0.0, 0.0), Point(DOMAIN_LENGTH, DOMAIN_LENGTH), N, N
+    )
+else:
+    domain_vertices = [
+        Point(0.0, 0.0),
+        Point(DOMAIN_LENGTH, 0.0),
+        Point(DOMAIN_LENGTH, DOMAIN_LENGTH),
+        Point(0.0, DOMAIN_LENGTH),
+    ]
 
-CH = FunctionSpace(mesh, P1*P1)
+    domain = Polygon(domain_vertices)
+    mesh = generate_mesh(domain, N)
 
-dch = TrialFunction(CH)
-h_1, j_1 = TestFunctions(CH)
 
-ch = Function(CH)
-ch0 = Function(CH)
+# CG stands for continuous galerkin can is a lagrange type element. 
+# The "1" corresponds to the order. So this is a linear lagrange element. 
+CH = FunctionSpace(mesh, "CG", 1, constrained_domain=PeriodicBoundary())
+
+MixedCH = MixedFunctionSpace([CH,CH])
+
+dch = TrialFunction(MixedCH)
+h_1, j_1 = TestFunctions(MixedCH)
+
+ch = Function(MixedCH)
+ch0 = Function(MixedCH)
 
 # Split mixed functions
 da, dmu_AB = split(dch)
@@ -209,7 +229,7 @@ postprocessor = PostProcessor({"casedir": casedir})
 #     # Add fields to postprocessor
 #     postprocessor.add_fields(fields)
 
-postprocesser.add_field(SolutionField("Concentration_A", dict(save=True,
+postprocessor.add_field(SolutionField("Concentration_A", dict(save=True,
                                 save_as=["hdf5", "xdmf"],
                                 plot=False,
                                 stride_timestep=20
@@ -227,4 +247,4 @@ while (t < TIME_MAX):
     # It seems this is the line to link up the relevant field to the postprocesser field
     postprocessor.update_all ({"Concentration_A": lambda: x_a}, t)
     
-pp.finalize_all()
+postprocessor.finalize_all()
