@@ -1,5 +1,5 @@
 BootStrap: docker
-From: quay.io/fenicsproject/stable:2016.1.0
+From: quay.io/fenicsproject/stable:2019.1.0.r3
 
 %post
     apt-get -y update
@@ -13,12 +13,9 @@ From: quay.io/fenicsproject/stable:2016.1.0
 
     cd /tmp/cbcflow && python2 -m pip install .
 
-    cd /home/fenics/shared
-   
-    python2 -m pip install -r requirements.txt
-
+    
 %files
-   requirements.txt /home/fenics/shared
+  
     
 %environment
 
