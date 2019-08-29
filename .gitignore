@@ -8,6 +8,9 @@
 *.png
 *.jpg
 *.gif
+*.hdf5
+*.h5
+*.xdmf
 
 # Data files
 *.csv
