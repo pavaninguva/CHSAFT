@@ -32,31 +32,30 @@ class CahnHilliardEquation(NonlinearProblem):
         NonlinearProblem.__init__(self)
         self.L = L
         self.a = a
-        self.reset_sparsity = True
+        # self.reset_sparsity = True
     def F(self, b, x):
         assemble(self.L, tensor=b)
     def J(self, A, x):
         assemble(self.a, tensor=A)#, reset_sparsity=self.reset_sparsity)
-        self.reset_sparsity = False
+        # self.reset_sparsity = False
 
 parameters["form_compiler"]["optimize"] = True
 parameters["form_compiler"]["cpp_optimize"] = True
-# parameters["form_compiler"]["representation"] = "quadrature"
 
 # INITIAL AND BOUNDARY CONDITIONS OF THE PROBLEM #
 
 # Initial conditions which include random noise as a perturbation
 
-class InitialConditions(Expression):
-    def __init__(self, **kwargs):
-        random.seed(1234)
 
-    # [0] corresponds to the concentration field for species A 
-    # [1] coresponds to the \mu_{AB} field
+class InitialConditions(UserExpression):
+    def __init__(self, **kwargs):
+        random.seed(2 + MPI.rank(MPI.comm_world))
+        super().__init__(**kwargs)
     def eval(self, values, x):
+        # [0] corresponds to the concentration field for species A 
+        # [1] coresponds to the \mu_{AB} field
         values[0] = A_RAW + 2.0 * NOISE_MAGNITUDE * (0.5 - random.random())
         values[1] = 0.0
-
     def value_shape(self):
         return (2,)
 
@@ -116,22 +115,20 @@ else:
 
 # CG stands for continuous galerkin can is a lagrange type element. 
 # The "1" corresponds to the order. So this is a linear lagrange element. 
-CH = FunctionSpace(mesh, "CG", 1, constrained_domain=PeriodicBoundary())
+# CH = FunctionSpace(mesh, "CG", 1, constrained_domain=PeriodicBoundary())
+# P1 = FiniteElement("Lagrange", interval, 1)
 
-# # This function has been deprecated for 2016.1.0, but still works. 
-# # The requirement is to created a combined concentration and chemical potential function space
-# # Since we are solving for two variables. 
-MixedCH = CH*CH #TO DO: Update syntax 
+# # # This function has been deprecated for 2016.1.0, but still works. 
+# # # The requirement is to created a combined concentration and chemical potential function space
+# # # Since we are solving for two variables. 
+P1 = FiniteElement("Lagrange", mesh.ufl_cell(), 1)
+CH = FunctionSpace(mesh, P1*P1)
 
-# P1 = FiniteElement ('Lagrange', triangle, 1)
-# element = MixedElement([P1, P1])
-# CH = FunctionSpace(mesh, element)
+dch = TrialFunction(CH)
+h_1, j_1 = TestFunctions(CH)
 
-dch = TrialFunction(MixedCH)
-h_1, j_1 = TestFunctions(MixedCH)
-
-ch = Function(MixedCH)
-ch0 = Function(MixedCH)
+ch = Function(CH)
+ch0 = Function(CH)
 
 # Split mixed functions
 da, dmu_AB = split(dch)
