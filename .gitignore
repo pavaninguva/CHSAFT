@@ -1,6 +1,9 @@
 # Mac folder shit
 *.DS_Store
 
+# Singularity Stuff
+*.sif
+*.simg
 
 # Simulation Results 
 *.pvd
