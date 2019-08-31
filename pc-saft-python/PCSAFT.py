@@ -275,14 +275,12 @@ class  GibbsMixing(object):
     self.vComp=np.zeros(len(xComp))
     for i in range(len(xComp)):
         tideal=xComp[i]*np.log(xComp[i])+tideal
-        Vol=least_squares(self.Pressure,np.log10(NParticles*nsegment[i]*pow(sigma[i],3)*pow(1-0.12*np.exp(-3*epsilon[i]/(k_B*Temp)),3)/0.8),args=(Pre,[nsegment[i]],[Mr[i]],[epsilon[i]],[sigma[i]],NParticles,Temp,[1.],[[0.]]))
-        self.vComp[i]=pow(10,Vol.x[0])
+        Vol=least_squares(self.Pressure,np.log10(NParticles*nsegment[i]*pow(sigma[i],3)*pow(1-0.12*np.exp(-3*epsilon[i]/(k_B*Temp)),3)/0.9),bounds=(np.log10(sum(NParticles*nsegment[i]*pow(sigma[i],3)*pow(1-0.12*np.exp(-3*epsilon[i]/(k_B*Temp)),3)/0.99)),np.log10(sum(NParticles*nsegment[i]*pow(sigma[i],3)*pow(1-0.12*np.exp(-3*epsilon[i]/(k_B*Temp)),3)/0.8))),args=(Pre,[nsegment[i]],[Mr[i]],[epsilon[i]],[sigma[i]],NParticles,Temp,[1.],[[0.]]))
         r=PCSAFT([nsegment[i]],[Mr[i]],[epsilon[i]],[sigma[i]],NParticles,Temp,pow(10,Vol.x[0]),[1.],[[0.]])
         Z_res=r.Z()-1.
         a_res=r.a_res()
         tres=(a_res+Z_res)*xComp[i]*NParticles*Temp*k_B+tres
-    Vol=least_squares(self.Pressure,np.log10(sum(NParticles*xComp*nsegment*pow(sigma,3)*pow(1-0.12*np.exp(-3*epsilon/(k_B*Temp)),3)/0.8)),args=(Pre,nsegment,Mr,epsilon,sigma,NParticles,Temp,xComp,k))
-    self.vComp=xComp*self.vComp/pow(10,Vol.x[0])
+    Vol=least_squares(self.Pressure,np.log10(sum(NParticles*xComp*nsegment*pow(sigma,3)*pow(1-0.12*np.exp(-3*epsilon/(k_B*Temp)),3)/0.9)),bounds=(np.log10(sum(NParticles*xComp*nsegment*pow(sigma,3)*pow(1-0.12*np.exp(-3*epsilon/(k_B*Temp)),3)/0.99)),np.log10(sum(NParticles*xComp*nsegment*pow(sigma,3)*pow(1-0.12*np.exp(-3*epsilon/(k_B*Temp)),3)/0.8))),args=(Pre,nsegment,Mr,epsilon,sigma,NParticles,Temp,xComp,k))
     r=PCSAFT(nsegment,Mr,epsilon,sigma,NParticles,Temp,pow(10,Vol.x[0]),xComp,k)
     a_res=r.a_res()
     Z_res=r.Z()-1.
