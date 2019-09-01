@@ -6,7 +6,7 @@ from dolfin import *
 # from cbcpost import *
 
 #chi_ab is the flory-huggins binary interaction parameter
-chi_AB = 6
+chi_AB = 0.6
 #N_A / N_B are the polymer chain lengths in terms of monomer units
 N_A = 1000
 N_B = 1000
@@ -17,9 +17,9 @@ A_RAW = 0.5
 
 #Numerics 
 DT = 0.1
-TIME_MAX = 2
-N_CELLS = 80
-DOMAIN_LENGTH = 40
+TIME_MAX = 10
+N_CELLS = 160
+DOMAIN_LENGTH = 80
 theta_ch = 0.5
 NOISE_MAGNITUDE = 0.03
 N=int(N_CELLS)
@@ -215,9 +215,13 @@ solver.parameters["relative_tolerance"] = 1e-6
 file = XDMFFile("output.xdmf")
 
 t = 0.0
+time_stride = 5
+timestep = 0
 while (t < TIME_MAX):
     t += dt
     ch0.vector()[:] = ch.vector()
     solver.solve(problem, ch.vector())
-    file.write (ch.split()[0], t)
+    timestep += 1
+    if (timestep % time_stride ==0):
+        file.write (ch.split()[0], t)
 
