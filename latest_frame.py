@@ -100,7 +100,7 @@ renderView1.CameraFocalPoint = [20.0, 20.0, 0.0]
 renderView1.CameraParallelScale = 28.284271247461902
 
 # save screenshot
-SaveScreenshot('C:/Users/CE-KPI15/Projects/CHSAFT/latest_frame.png', renderView1, ImageResolution=[1627, 822], 
+SaveScreenshot('./latest_frame.png', renderView1, ImageResolution=[1627, 822], 
     # PNG options
     CompressionLevel='0')
 
