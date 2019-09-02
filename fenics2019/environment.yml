@@ -1,14 +1,14 @@
-name: fenicsproject
+name: fenics2019
 channels:
-  - conda-forge
   - defaults
+  - conda-forge
 dependencies:
   - _libgcc_mutex=0.1=main
   - binutils_impl_linux-64=2.31.1=h6176602_1
   - binutils_linux-64=2.31.1=h6176602_8
   - boost-cpp=1.70.0=h8e57a91_2
   - bzip2=1.0.8=h516909a_0
-  - ca-certificates=2019.6.16=hecc5488_0
+  - ca-certificates=2019.5.15=1
   - certifi=2019.6.16=py37_1
   - cmake=3.15.2=hf94ab9c_0
   - curl=7.65.3=hf8cf82a_0
@@ -35,7 +35,7 @@ dependencies:
   - libblas=3.8.0=12_openblas
   - libcblas=3.8.0=12_openblas
   - libcurl=7.65.3=hda55be3_0
-  - libedit=3.1.20170329=hf8c457e_1001
+  - libedit=3.1.20181209=hc058e9b_0
   - libffi=3.2.1=he1b5a44_1006
   - libgcc-ng=9.1.0=hdf63c60_0
   - libgfortran-ng=7.3.0=hdf63c60_0
@@ -55,7 +55,7 @@ dependencies:
   - mumps-mpi=5.2.1=h5bebb2f_1
   - ncurses=6.1=hf484d3e_1002
   - numpy=1.16.4=py37h95a1406_0
-  - openssl=1.1.1c=h516909a_0
+  - openssl=1.1.1c=h7b6447c_1
   - parmetis=4.0.3=h9f7b9cf_1003
   - petsc=3.11.3=h624fa55_1
   - petsc4py=3.11.0=py37h3d81f39_1
@@ -65,6 +65,7 @@ dependencies:
   - ptscotch=6.0.7=h2e95eaa_0
   - pybind11=2.3.0=py37hc9558a2_2
   - python=3.7.3=h33d41f4_1
+  - pyyaml=5.1.2=py37h7b6447c_0
   - readline=8.0=hf8c457e_0
   - rhash=1.3.6=h14c3975_1001
   - scalapack=2.0.2=hfacbc1e_1006
@@ -80,6 +81,9 @@ dependencies:
   - tk=8.6.9=hed695b0_1002
   - wheel=0.33.6=py37_0
   - xz=5.2.4=h14c3975_1001
+  - yaml=0.1.7=had09818_2
   - zlib=1.2.11=h516909a_1005
-prefix: /home/pavaninguva/miniconda3/envs/fenicsproject
+  - pip:
+    - pathlib==1.0.1
+prefix: /home/pavaninguva/miniconda3/envs/fenics2019
 
