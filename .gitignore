@@ -4,6 +4,8 @@
 # Singularity Stuff
 *.sif
 *.simg
+tmp*
+core*
 
 # Simulation Results 
 *.pvd
