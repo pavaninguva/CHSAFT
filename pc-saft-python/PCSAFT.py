@@ -290,6 +290,28 @@ class  GibbsMixing(object):
 ## How it works
 # r=GibbsMixing(Number of Segments,Molar Mass (kg/mol),Epsilon (K),Sigma (m),Number of Particles,Temperature (K),Pressure (MPa),Composition (Molar),Cross Interaction Parameter)
 ## Example:
-
 r=GibbsMixing([68.855,30.704],[2350,1520],[284.70, 367.17],[3.8413e-10,4.1482e-10],[6.02e23],[340.],[1e5],[0.5,0.5],[[0.,0.02],[0.02,0.]])
 print(r.GibbsFreeMixing())
+# PARAMETERS:
+
+# Pure Component:
+# PS:
+    # m/Mr=0.0205
+    # sigma=4.152e-10
+    # epsilon=348.2
+# PMMA:
+    # m/Mr=0.027
+    # sigma=3.553e-10
+    # epsilon=264.6
+# BR:
+    # m/Mr=0.0263
+    # sigma=4.008e-10
+    # epsilon=279.4
+
+# Cross Interaction:
+# PS(1250)+PMMA(6350):
+    # k_ij=-0.0095
+# PS(1520/1200)+BR(2350)
+    # k_ij=0.001 or 0.0001
+# PS(1520/1200)+BR(920)
+    # k_ij=0.0012 or 0.0002
