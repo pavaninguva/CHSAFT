@@ -11,7 +11,7 @@ from parameters.params import (
     N_CELLS,
     DOMAIN_LENGTH,
     theta_ch,
-    MESH_TYPE
+    MESH_TYPE,
     TIME_STRIDE,
     chi_AB,
     N_A,
