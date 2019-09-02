@@ -1,0 +1,36 @@
+# mole fraction of A
+A_RAW: 0.5
+
+# Thermo model
+GIBBS: FH
+
+# Materials
+MATERIAL_CHOICE: PS_PMMA
+
+#Numerics
+NOISE_MAGNITUDE: 0.03
+TIME_MAX: 400000
+DT: 1
+N_CELLS: 160
+DOMAIN_LENGTH: 80
+theta_ch: 0.5
+TIME_STRIDE: 100
+MESH_TYPE: structured
+
+
+# PS_PMMA
+## FH
+chi_AB_PS_PMMA: 0.006
+N_A_PS_PMMA: 1000
+N_B_PS_PMMA: 1000
+
+## PC_SAFT
+
+
+# PS_PB
+## FH
+chi_AB_PS_PB: 0.005
+N_A_PS_PB: 1000
+N_A_PS_PB: 1000
+
+

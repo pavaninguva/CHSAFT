@@ -3,27 +3,21 @@
 # dolfin is the finite element solver package within the fenics environment
 import random
 from dolfin import *
-# from cbcpost import *
-
-#chi_ab is the flory-huggins binary interaction parameter
-chi_AB = 0.6
-#N_A / N_B are the polymer chain lengths in terms of monomer units
-N_A = 1000
-N_B = 1000
-# D_AB is the diffusion coefficient for the polymeric species
-D_AB = 1e-11 
-# Intial mole fraction of species A
-A_RAW = 0.5
-
-#Numerics 
-DT = 0.1
-TIME_MAX = 10
-N_CELLS = 160
-DOMAIN_LENGTH = 80
-theta_ch = 0.5
-NOISE_MAGNITUDE = 0.03
-N=int(N_CELLS)
-MESH_TYPE = "structured"
+from parameters.params import (
+    A_RAW,
+    NOISE_MAGNITUDE,
+    TIME_MAX,
+    DT,
+    N_CELLS,
+    DOMAIN_LENGTH,
+    theta_ch,
+    MESH_TYPE
+    TIME_STRIDE,
+    chi_AB,
+    N_A,
+    N_B,
+    GIBBS
+)
 
 class CahnHilliardEquation(NonlinearProblem):
     def __init__(self, a, L):
@@ -43,7 +37,6 @@ parameters["form_compiler"]["cpp_optimize"] = True
 # INITIAL AND BOUNDARY CONDITIONS OF THE PROBLEM #
 
 # Initial conditions which include random noise as a perturbation
-
 
 class InitialConditions(UserExpression):
     def __init__(self, **kwargs):
@@ -141,8 +134,11 @@ ch0.interpolate(ch_init)
 
 kappa = (2.0/3.0)*chi_AB
 
-#Flory-Huggins Expression
-g = ( x_a * ln(x_a) / N_A ) + ((1.0-x_a)*ln(1-x_a)/ N_B) + x_a*(1.0-x_a)*chi_AB #TO DO: Shift this to a master script
+if GIBBS == "FH":
+    #Flory-Huggins Expression
+    g = ( x_a * ln(x_a) / N_A ) + ((1.0-x_a)*ln(1-x_a)/ N_B) + x_a*(1.0-x_a)*chi_AB 
+elif GIBBS != "FH":
+    print ("Other free energy functions yet to be implemented")
 
 # Using the fenics autodifferentiation toolkit 
 dgdx_a = diff(g,x_a)
@@ -174,48 +170,11 @@ solver.parameters["linear_solver"] = "lu"
 solver.parameters["convergence_criterion"] = "residual"
 solver.parameters["relative_tolerance"] = 1e-6
 
-# Setting up post processor
 
-# casedir = "output_RESULTS" 
-# postprocessor = PostProcessor({"casedir": casedir})
-
-
-# postprocessor.add_field(SolutionField("Concentration_A", dict(save=True,
-#                                 save_as=["hdf5", "xdmf"],
-#                                 plot=False,
-#                                 stride_timestep=20
-#                                 )))
-
-# Setting up time stepping and solving
-
-# t = 0.0
-# timestep = 0
-
-# while (t < TIME_MAX):
-#     print (t)
-#     t += dt
-#     timestep += 1
-#     ch0.vector()[:] = ch.vector()
-#     solver.solve(problem, ch.vector())
-#     # It seems this is the line to link up the relevant field to the postprocesser field
-#     postprocessor.update_all ({"Concentration_A"= lambda: ch.split()[0]}, t, timestep)
-    
-# postprocessor.finalize_all()
-
-### IF ALL GOES WRONG JUST USE THE DAMN PVD FILE OUTPUT
-# file = XDMFFile("output.xdmf")
-
-# # Step in time
-# t = 0.0
-# while (t < TIME_MAX):
-#     t += dt
-#     ch0.vector()[:] = ch.vector()
-#     solver.solve(problem, ch.vector())
-#     file.write (ch.split()[0], t)
 file = XDMFFile("output.xdmf")
 
 t = 0.0
-time_stride = 5
+time_stride = TIME_STRIDE
 timestep = 0
 while (t < TIME_MAX):
     t += dt
