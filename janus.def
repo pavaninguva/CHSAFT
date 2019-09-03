@@ -1,19 +1,23 @@
 BootStrap: docker
-From: quay.io/fenicsproject/stable:2016.1.0
+From: quay.io/fenicsproject/stable:2018.1.0
 
 %post
     apt-get -y update
 
+    apt-get install python-pip
+
     rm -rf /tmp/cbcpost
     git clone https://bitbucket.org/simula_cbc/cbcpost.git /tmp/cbcpost
     
-    cd /tmp/cbcpost && python setup.py install
+    cd /tmp/cbcpost && python2 -m pip install .
 
-    cd /home/fenics/shared
-    python2 -m pip install -r requirements.txt
+    git clone https://bitbucket.org/simula_cbc/cbcflow.git /tmp/cbcflow
 
+    cd /tmp/cbcflow && python2 -m pip install .
+
+    
 %files
-    requirements.txt /home/fenics/shared
+  
     
 %environment
 

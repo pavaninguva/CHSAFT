@@ -1,6 +1,11 @@
 # Mac folder shit
 *.DS_Store
 
+# Singularity Stuff
+*.sif
+*.simg
+tmp*
+core*
 
 # Simulation Results 
 *.pvd
@@ -8,6 +13,9 @@
 *.png
 *.jpg
 *.gif
+*.hdf5
+*.h5
+*.xdmf
 
 # Data files
 *.csv

@@ -1,0 +1,16 @@
+BootStrap: docker
+From: quay.io/fenicsproject/stable:2018.1.0
+
+%post
+    cd /home/fenics/shared
+    python2 -m pip install -r requirements.tx
+
+    
+%files
+    requirements.txt /home/fenics/shared
+  
+    
+%environment
+
+%runscript
+
