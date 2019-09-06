@@ -167,6 +167,8 @@ a = derivative(F, ch, dch)
 problem = CahnHilliardEquation(a, F)
 solver = NewtonSolver()
 solver.parameters["linear_solver"] = "lu"
+# solver.parameters["linear_solver"] = "gmres"
+# solver.parameters["preconditioner"] = "ilu"
 solver.parameters["convergence_criterion"] = "residual"
 solver.parameters["relative_tolerance"] = 1e-6
 

@@ -1,11 +1,5 @@
 #!/bin/sh
 
-while getopts "simtype:" "mode:" option; do
-    case "${option}" in
-    simtype) SIM=${OPTARG};;
-    mode) MODE=${OPTARG};;
-    esac
-done
+#PBS -lwalltime=72:00:00
+#PBS -lselect=1:ncpus=8:mem=8gb
 
-echo "Hello $SIM"
-echo "Hello $MODE"
