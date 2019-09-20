@@ -16,6 +16,7 @@ core*
 *.hdf5
 *.h5
 *.xdmf
+2019*
 
 # Data files
 *.csv
