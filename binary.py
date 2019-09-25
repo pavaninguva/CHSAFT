@@ -3,6 +3,8 @@
 # dolfin is the finite element solver package within the fenics environment
 import random
 from dolfin import *
+import csv
+import os
 from parameters.params import (
     A_RAW,
     NOISE_MAGNITUDE,
@@ -16,7 +18,9 @@ from parameters.params import (
     chi_AB,
     N_A,
     N_B,
-    GIBBS
+    GIBBS,
+    FINITE_ELEMENT,
+    FINITE_ELEMENT_ORDER
 )
 
 class CahnHilliardEquation(NonlinearProblem):
@@ -112,7 +116,7 @@ else:
 # # # This function has been deprecated for 2016.1.0, but still works. 
 # # # The requirement is to created a combined concentration and chemical potential function space
 # # # Since we are solving for two variables. 
-P1 = FiniteElement("Lagrange", mesh.ufl_cell(), 1)
+P1 = FiniteElement(FINITE_ELEMENT, mesh.ufl_cell(), FINITE_ELEMENT_ORDER)
 CH = FunctionSpace(mesh, P1*P1)
 
 dch = TrialFunction(CH)
@@ -172,7 +176,8 @@ solver.parameters["linear_solver"] = "lu"
 solver.parameters["convergence_criterion"] = "residual"
 solver.parameters["relative_tolerance"] = 1e-6
 
-
+# Initialising the output files
+gibbs_list = []
 file = XDMFFile("output.xdmf")
 
 t = 0.0
@@ -180,9 +185,30 @@ time_stride = TIME_STRIDE
 timestep = 0
 while (t < TIME_MAX):
     t += dt
+    print (f"Time = {t}")
     ch0.vector()[:] = ch.vector()
     solver.solve(problem, ch.vector())
     timestep += 1
+
+    # Assembling the various terms of the Landau-Ginzburg free energy functional
+    homogenous_energy = assemble(g * dx())
+    gradient_energy = assemble(Constant(0.5) * kappa * dot(grad(x_a), grad(x_a)) * dx())
+    gibbs= homogenous_energy + gradient_energy
+    gibbs_list.append(gibbs)
+
+    fpath = "./output_gibbs.csv"
+    headers = ["time", "gibbs"]
+
+    # Write header row (for first timestep)
+    if not os.path.exists(fpath):
+        with open(fpath,"w") as f:
+            w = csv.DictWriter(f,headers)
+            w.writeheader()
+    # Appending case data
+    with open(fpath, "a") as f:
+        w = csv.DictWriter(f, headers)
+        w.writerow({"time": float(t), "gibbs": float(gibbs)})
+
     if (timestep % time_stride ==0):
         file.write (ch.split()[0], t)
 

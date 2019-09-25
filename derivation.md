@@ -54,6 +54,20 @@ $$
 \frac{\partial a}{\partial \tilde{t}} = \tilde{\nabla}\cdot (a(1-a)\tilde{\nabla}\tilde{\mu}_{AB})
 $$
 
+## Gibbs energy of the system
+
+Using the generalised landau-ginzburg free energy functional, we can write the following expression for the free energy of the whole system: 
+$$
+G_{system} = \int_{V}g(x_{1},x_{2}...x_{n}) +\sum^{N-1}_{i}\frac{\kappa_{i}}{2}(\nabla x_{i})^{2} + \sum_{j>i} \sum^{N-1}_{i}(\nabla x_{i})(\nabla x_{j}) dV
+$$
+For a binary system, this is simply written as: 
+$$
+G_{system}= \int_{V} g(x_{1}) + \frac{\kappa}{2}(\nabla x_{1})^2 dV
+$$
+Note that this is the molar Gibbs energy of the inhomogeneous system. 
+
+To track the evolution of the Gibbs energy over time, this equation needs to be integrated over the whole domain. 
+
 ## Weak form expressions
 
 To implement the equation system in fenics, they need to be converted to the weak forms. The general approach is to introduce arbitrary test functions and integrate by parts to obtain the weak form. 

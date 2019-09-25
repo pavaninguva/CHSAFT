@@ -27,6 +27,8 @@ DOMAIN_LENGTH = params_dict["DOMAIN_LENGTH"]
 theta_ch = params_dict["theta_ch"]
 MESH_TYPE = params_dict["MESH_TYPE"]
 TIME_STRIDE = params_dict["TIME_STRIDE"]
+FINITE_ELEMENT = params_dict["FINITE_ELEMENT"]
+FINITE_ELEMENT_ORDER = params_dict["FINITE_ELEMENT_ORDER"]
 
 # Logic for material interaction parameters
 if MATERIAL_CHOICE == "PS_PMMA":
