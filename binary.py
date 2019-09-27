@@ -20,8 +20,10 @@ from parameters.params import (
     N_B,
     GIBBS,
     FINITE_ELEMENT,
-    FINITE_ELEMENT_ORDER
+    FINITE_ELEMENT_ORDER,
+    SOLVER_CONFIG
 )
+
 
 class CahnHilliardEquation(NonlinearProblem):
     def __init__(self, a, L):
@@ -168,13 +170,41 @@ F = F_a + F_mu_AB
 #Compute directional derivative about u in the direction of du
 a = derivative(F, ch, dch)
 
-problem = CahnHilliardEquation(a, F)
-solver = NewtonSolver()
-solver.parameters["linear_solver"] = "lu"
-#solver.parameters["linear_solver"] = "gmres"
-#solver.parameters["preconditioner"] = "ilu"
-solver.parameters["convergence_criterion"] = "residual"
-solver.parameters["relative_tolerance"] = 1e-6
+if SOLVER_CONFIG == "LU":
+
+    problem = CahnHilliardEquation(a, F)
+    solver = NewtonSolver()
+    solver.parameters["linear_solver"] = "lu"
+    #solver.parameters["linear_solver"] = "gmres"
+    #solver.parameters["preconditioner"] = "ilu"
+    solver.parameters["convergence_criterion"] = "residual"
+    solver.parameters["relative_tolerance"] = 1e-6
+
+elif SOLVER_CONFIG == "KRYLOV":
+    class CustomSolver(NewtonSolver):
+
+        def __init__(self):
+            NewtonSolver.__init__(self, mesh.mpi_comm(),
+                                PETScKrylovSolver(), PETScFactory.instance())
+
+        def solver_setup(self, A, P, problem, iteration):
+            self.linear_solver().set_operator(A)
+
+            PETScOptions.set("ksp_type", "gmres")
+            PETScOptions.set("ksp_monitor")
+            PETScOptions.set("pc_type", "ilu")
+            PETScOptions.set("ksp_rtol", "1.0e-6")
+            PETScOptions.set("ksp_atol", "1.0e-10")
+
+            self.linear_solver().set_from_options()
+
+    problem = CahnHilliardEquation(a, F)
+    solver = CustomSolver()
+
+
+    
+
+
 
 # Initialising the output files
 gibbs_list = []
