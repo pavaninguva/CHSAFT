@@ -1,4 +1,5 @@
-# mole fraction of A
+#
+# Mole fraction of A
 A_RAW: 0.5
 
 # Thermo model
@@ -10,19 +11,19 @@ MATERIAL_CHOICE: PS_PMMA
 #Numerics
 NOISE_MAGNITUDE: 0.05
 TIME_MAX: 40000
-DT: 1
-N_CELLS: 250
+DT: 0.05
+N_CELLS: 200
 DOMAIN_LENGTH: 250
-theta_ch: 0.5
+theta_ch: 1
 TIME_STRIDE: 100
 MESH_TYPE: structured
 FINITE_ELEMENT: CG
-FINITE_ELEMENT_ORDER: 1
+FINITE_ELEMENT_ORDER: 2
 
 
 # PS_PMMA
 ## FH
-chi_AB_PS_PMMA: 0.02
+chi_AB_PS_PMMA: 0.06
 N_A_PS_PMMA: 1000
 N_B_PS_PMMA: 1000
 
