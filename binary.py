@@ -192,7 +192,8 @@ elif SOLVER_CONFIG == "KRYLOV":
 
             PETScOptions.set("ksp_type", "gmres")
             PETScOptions.set("ksp_monitor")
-            PETScOptions.set("pc_type", "ilu")
+            PETScOptions.set("pc_type", "hypre")
+            PETScOptions.set("pc_hypre_type", "euclid")
             PETScOptions.set("ksp_rtol", "1.0e-6")
             PETScOptions.set("ksp_atol", "1.0e-10")
 
