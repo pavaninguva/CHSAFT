@@ -1,7 +1,7 @@
-from fipy import CellVariable, Grid2D, GaussianNoiseVariable, DiffusionTerm, TransientTerm, ImplicitSourceTerm, Viewer
+from fipy import CellVariable, Grid2D, GaussianNoiseVariable, DiffusionTerm, TransientTerm, ImplicitSourceTerm, VTKCellViewer, LinearGMRESSolver
 from fipy.tools import numerix
-from autograd import grad
-from math import log
+# from autograd import grad
+# from autograd.numpy import log
 
 from params_fipy import (
     A_RAW,
@@ -14,15 +14,19 @@ from params_fipy import (
     chi_AB,
     N_A,
     N_B,
-    GIBBS
+    GIBBS,
+    DESIRED_RESIDUAL
 )
+# dx = DOMAIN_LENGTH / N_CELLS
+# dy = DOMAIN_LENGTH / N_CELLS
 
-# Define mesh
-mesh = Grid2D(Lx=DOMAIN_LENGTH, Ly=DOMAIN_LENGTH, nx=N_CELLS, ny=N_CELLS)
+# # Define mesh
+# mesh = Grid2D(dx=dx, dy=dx, nx=N_CELLS, ny=N_CELLS)
+mesh = Grid2D(nx=10.0, ny=10.0, dx=0.25, dy=0.25)
 
 # We need to define the relevant variables: 
-x_a = CellVariable(name=r"$\x_a$", mesh = mesh)
-mu_AB = CellVariable(name=r"$\mu_AB$", mesh = mesh)
+x_a = CellVariable(name=r"x_a", mesh = mesh)
+mu_AB = CellVariable(name=r"$mu_AB$", mesh = mesh)
 
 # We need to introduce the noise
 noise = GaussianNoiseVariable(mesh=mesh,
@@ -31,19 +35,25 @@ noise = GaussianNoiseVariable(mesh=mesh,
 
 x_a[:] = noise
 
-if __name__ == "__main__":
-    viewer = Viewer(vars=(x_a,), datamin=0., datamax=1.)
+# def g(x_a):
+#     if GIBBS == "FH":
+#         #Flory-Huggins Expression
+#         # The numerix.log is needed since x_a is a CellVariable and not a simple array of size 1. 
+#         # The standard math.log cannot cope with this. 
+#         return ( x_a * log(x_a) / N_A ) + ((1.0-x_a)*log(1-x_a)/ N_B) + x_a*(1.0-x_a)*chi_AB 
+#     elif GIBBS != "FH":
+#         print ("Other free energy functions yet to be implemented")
 
-print (type(x_a))
+# # Use automatic differentiation to evaluate the derivatives of the free energy
+# print (g(0.5))
+# dgdx_a = grad(g)
+# d2gdx_a2 = grad(dgdx_a)
+# print (dgdx_a(0.4))
 if GIBBS == "FH":
-    #Flory-Huggins Expression
-    g = ( x_a * log(x_a) / N_A ) + ((1.0-x_a)*log(1-x_a)/ N_B) + x_a*(1.0-x_a)*chi_AB 
-elif GIBBS != "FH":
-    print ("Other free energy functions yet to be implemented")
-
-# Use automatic differentiation to evaluate the derivatives of the free energy
-dgdx_a = grad(g, x_a)
-d2gdx_a2 = grad(dgdx_a, x_a)
+    dgdx_a = ((1.0/N_A) - (1.0/N_B)) + (1.0/N_A)*numerix.log(x_a) - (1.0/N_B)*numerix.log(1.0 - x_a) + chi_AB*(1.0 - 2*x_a)
+    d2gdx_a2 = (1.0/(N_A*x_a)) + (1.0/(N_B*(1.0 - x_a))) - 2*chi_AB
+elif GIBBS != "FH": 
+    print("Implent more stuff you lazy fuck")
 
 # Define the equations
 
@@ -64,18 +74,26 @@ dt = DT
 if __name__ == "__main__":
     duration = TIME_MAX
 
+# solver = LinearGMRESSolver(tolerance=1e-10)
+# res = 1.
+t = 0.0
+time_stride = TIME_STRIDE
+timestep = 0
 
 while elapsed < duration: 
     elapsed += dt
+    timestep += 1
+    # while res > DESIRED_RESIDUAL:
     eq.solve(dt=dt)
+    print (elapsed)
+    if (timestep % time_stride ==0):
+        vw = VTKCellViewer(vars=(x_a, mu_AB))
+        vw.plot(filename="%s_output.vtk" %elapsed)
 
-    if __name__ == "__main__":
-        viewer.plot()
 
-from builtins import input
 
-if __name__ == '__main__':
-    input("Coupled equations. Press <return> to proceed...")
+
+
 
 
 

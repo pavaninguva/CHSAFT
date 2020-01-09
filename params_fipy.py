@@ -30,6 +30,7 @@ TIME_STRIDE = params_dict["TIME_STRIDE"]
 FINITE_ELEMENT = params_dict["FINITE_ELEMENT"]
 FINITE_ELEMENT_ORDER = params_dict["FINITE_ELEMENT_ORDER"]
 SOLVER_CONFIG = params_dict["SOLVER_CONFIG"]
+DESIRED_RESIDUAL = params_dict["DESIRED_RESIDUAL"]
 
 # Logic for material interaction parameters
 if MATERIAL_CHOICE == "PS_PMMA":
