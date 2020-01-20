@@ -1,7 +1,5 @@
-from fipy import CellVariable, Grid2D, GaussianNoiseVariable, DiffusionTerm, TransientTerm, ImplicitSourceTerm, VTKCellViewer, LinearGMRESSolver
+from fipy import CellVariable, Grid2D, GaussianNoiseVariable, DiffusionTerm, TransientTerm, ImplicitSourceTerm, VTKCellViewer, LinearLUSolver
 from fipy.tools import numerix
-# from autograd import grad
-# from autograd.numpy import log
 
 from params_fipy import (
     A_RAW,
@@ -25,8 +23,8 @@ from params_fipy import (
 mesh = Grid2D(nx=10.0, ny=10.0, dx=0.25, dy=0.25)
 
 # We need to define the relevant variables: 
-x_a = CellVariable(name=r"x_a", mesh = mesh)
-mu_AB = CellVariable(name=r"$mu_AB$", mesh = mesh)
+x_a = CellVariable(name=r"x_a", mesh = mesh, hasOld=1)
+mu_AB = CellVariable(name=r"mu_AB", mesh = mesh, hasOld=1)
 
 # We need to introduce the noise
 noise = GaussianNoiseVariable(mesh=mesh,
@@ -74,17 +72,24 @@ dt = DT
 if __name__ == "__main__":
     duration = TIME_MAX
 
-# solver = LinearGMRESSolver(tolerance=1e-10)
-# res = 1.
-t = 0.0
+
 time_stride = TIME_STRIDE
 timestep = 0
+
+# Defining the solver to improve numerical stabilty
+solver = LinearLUSolver(tolerance=1e-10, iterations=25, maxIterations=50)
 
 while elapsed < duration: 
     elapsed += dt
     timestep += 1
+    x_a.updateOld()
+    mu_AB.updateOld()
+    res = 1e+10
     # while res > DESIRED_RESIDUAL:
-    eq.solve(dt=dt)
+    # eq.solve(dt=dt)
+    while res > 1e-10:
+        res = eq.sweep(dt=dt, solver=solver)
+        print ("sweep!")
     print (elapsed)
     if (timestep % time_stride ==0):
         vw = VTKCellViewer(vars=(x_a, mu_AB))

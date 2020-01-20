@@ -10,6 +10,7 @@ core*
 # Simulation Results 
 *.pvd
 *.vtu
+*.vtk
 *.png
 *.jpg
 *.gif
