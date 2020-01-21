@@ -20,7 +20,7 @@ from params_fipy import (
 
 # # Define mesh
 # mesh = Grid2D(dx=dx, dy=dx, nx=N_CELLS, ny=N_CELLS)
-mesh = Grid2D(nx=10.0, ny=10.0, dx=0.25, dy=0.25)
+mesh = Grid2D(nx=100.0, ny=100.0, dx=0.5, dy=0.5)
 
 # We need to define the relevant variables: 
 x_a = CellVariable(name=r"x_a", mesh = mesh, hasOld=1)
@@ -56,7 +56,7 @@ elif GIBBS != "FH":
 # Define the equations
 
 # evaluating kappa
-kappa = (2.0/3.0)*chi_AB
+kappa = (1.0/6.0)*chi_AB
 
 # eqn 1 is the 2nd order transport equation
 eq1 = (TransientTerm(var=x_a)) == DiffusionTerm(coeff = x_a * (1 - x_a), var=mu_AB)
