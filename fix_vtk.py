@@ -1,4 +1,8 @@
-import glob , os
+import glob
+
+from tempfile import mkstemp
+from shutil import move
+from os import remove
 
 # Obtain list of VTK files in directory
 vtk_list = glob.glob("*.vtk")
@@ -9,15 +13,21 @@ for vtk in vtk_list:
     os.rename(vtk, vtk[:-4] + ".txt")
 
 txt_list = glob.glob("*output.txt")
-print(txt_list)
 
-for text in txt_list: 
-    with open(text, "w") as foo:
-        line = foo.readlines()
-        # print (line)
-        for number in line:
-            # print (number)
-            if "UNSTRUCTURED_GRID" in number:
-                number = number.replace("UNSTRUCTURED_GRID", "POLYDATA")
+def replace(source_file_path, pattern, substring):
+    fh, target_file_path = mkstemp()
+    with open(target_file_path, 'w') as target_file:
+        with open(source_file_path, 'r') as source_file:
+            for line in source_file:
+                if line.strip() == pattern:
+                    lineout = f"{substring}\n"
+                    target_file.write(lineout)
+                else:
+                    target_file.write(line)
+    remove(source_file_path)
+    move(target_file_path, source_file_path)
+
+for text in txt_list:
+    replace(text, "41", "9")
+    os.rename(text, text[:-4] + ".vtk")
             
-            if ""

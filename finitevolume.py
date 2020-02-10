@@ -1,5 +1,7 @@
 from fipy import CellVariable, Grid2D, GaussianNoiseVariable, DiffusionTerm, TransientTerm, ImplicitSourceTerm, VTKCellViewer, LinearLUSolver
 from fipy.tools import numerix
+import time
+# from petsc4py import PETSc
 
 from params_fipy import (
     A_RAW,
@@ -15,12 +17,13 @@ from params_fipy import (
     GIBBS,
     DESIRED_RESIDUAL
 )
-# dx = DOMAIN_LENGTH / N_CELLS
-# dy = DOMAIN_LENGTH / N_CELLS
+
+print ("Yay")
 
 # # Define mesh
 # mesh = Grid2D(dx=dx, dy=dx, nx=N_CELLS, ny=N_CELLS)
-mesh = Grid2D(nx=100.0, ny=100.0, dx=0.5, dy=0.5)
+mesh = Grid2D(nx=200.0, ny=200.0, dx=0.5, dy=0.5)
+print ("mesh loaded")
 
 # We need to define the relevant variables: 
 x_a = CellVariable(name=r"x_a", mesh = mesh, hasOld=1)
@@ -77,7 +80,9 @@ time_stride = TIME_STRIDE
 timestep = 0
 
 # Defining the solver to improve numerical stabilty
-solver = LinearLUSolver(tolerance=1e-10, iterations=25, maxIterations=50)
+solver = LinearLUSolver(tolerance=1e-10, iterations=25)
+# solver = PETSc.KSP().create()
+start = time.time()
 
 while elapsed < duration: 
     elapsed += dt
@@ -91,6 +96,8 @@ while elapsed < duration:
         res = eq.sweep(dt=dt, solver=solver)
         print ("sweep!")
     print (elapsed)
+    end = time.time()
+    print(end-start)
     if (timestep % time_stride ==0):
         vw = VTKCellViewer(vars=(x_a, mu_AB))
         vw.plot(filename="%s_output.vtk" %elapsed)
