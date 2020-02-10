@@ -3,7 +3,7 @@ import glob
 from tempfile import mkstemp
 from shutil import move
 from os import remove
-
+import os
 # Obtain list of VTK files in directory
 vtk_list = glob.glob("*.vtk")
 

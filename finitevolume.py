@@ -90,8 +90,6 @@ while elapsed < duration:
     x_a.updateOld()
     mu_AB.updateOld()
     res = 1e+10
-    # while res > DESIRED_RESIDUAL:
-    # eq.solve(dt=dt)
     while res > 1e-10:
         res = eq.sweep(dt=dt, solver=solver)
         print ("sweep!")
