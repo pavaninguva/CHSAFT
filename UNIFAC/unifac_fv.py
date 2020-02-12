@@ -3,7 +3,7 @@ This section is for capturing the physical properties / group parameters of the 
 
 We define the extent of polymerisation, number of groups etc
 """
-# Update the input polymer properties. 
+# Update the input polymer properties as needed
 Polymer_length = {
     "PMMA": 1000,
     "PS":1000,
@@ -21,6 +21,7 @@ R_k = {
     "ACCH":0.8121
 }
 
+# Number of each group in the polymer repeating unit
 Polymer_groups = {
     "PB":{
         "CH=CH":1,
@@ -38,36 +39,6 @@ Polymer_groups = {
         "CH2":1
     }
 }
-
-
-"""
-This section deals with calculating the combinatorial contribution
-
-This requires calculating \phi_{i} which itself is dependent on r_{i}
-"""
-
-def r_i (Species):
-    r = 0
-    for group in list(Polymer_groups[Species].keys()):
-        r = r + Polymer_groups[Species][group]*R_k[group]*Polymer_length[Species]
-    
-    return r
-
-print (r_i("PMMA"))
-
-def phi_i ():
-    var = ()
-
-
-
-"""
-This section deals with the free volume contribution i.e. \gamma_{FV}
-
-We need to calculate C_{i}, \tilde{V}_{i} and \tilde{V}_{m}
-"""
-
-
-
 
 # Setting up volume expansion dicts
 # rho_reference has units of g/ cm^3
@@ -102,6 +73,32 @@ expansion_coefficients = {
     },
     "PB":6.99e-4
 }
+
+"""
+This section deals with calculating the combinatorial contribution
+
+This requires calculating \phi_{i} which itself is dependent on r_{i}
+"""
+
+def r_i (Species):
+    r = 0
+    for group in list(Polymer_groups[Species].keys()):
+        r = r + Polymer_groups[Species][group]*R_k[group]*Polymer_length[Species]
+    
+    return r
+
+print (r_i("PMMA"))
+
+def phi_i ():
+    var = ()
+
+
+
+"""
+This section deals with the free volume contribution i.e. \gamma_{FV}
+
+We need to calculate C_{i}, \tilde{V}_{i} and \tilde{V}_{m}
+"""
 
 # V_{i} has units of cm^/g 
 def volume_i (Species, Temp):

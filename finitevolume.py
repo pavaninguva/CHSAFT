@@ -1,7 +1,7 @@
-from fipy import CellVariable, Grid2D, GaussianNoiseVariable, DiffusionTerm, TransientTerm, ImplicitSourceTerm, VTKCellViewer, LinearLUSolver
+from fipy import CellVariable, Grid2D, GaussianNoiseVariable, DiffusionTerm, TransientTerm, ImplicitSourceTerm, VTKCellViewer, LinearLUSolver, parallelComm
 from fipy.tools import numerix
 import time
-# from petsc4py import PETSc
+
 
 from params_fipy import (
     A_RAW,
@@ -22,19 +22,25 @@ print ("Yay")
 
 # # Define mesh
 # mesh = Grid2D(dx=dx, dy=dx, nx=N_CELLS, ny=N_CELLS)
-mesh = Grid2D(nx=200.0, ny=200.0, dx=0.5, dy=0.5)
+mesh = Grid2D(nx=50.0, ny=50.0, dx=0.5, dy=0.5)
 print ("mesh loaded")
 
 # We need to define the relevant variables: 
 x_a = CellVariable(name=r"x_a", mesh = mesh, hasOld=1)
 mu_AB = CellVariable(name=r"mu_AB", mesh = mesh, hasOld=1)
 
-# We need to introduce the noise
-noise = GaussianNoiseVariable(mesh=mesh,
-                              mean = A_RAW,
-                              variance = NOISE_MAGNITUDE).value
 
-x_a[:] = noise
+# We need to introduce the noise
+# noise = GaussianNoiseVariable(mesh=mesh,
+#                               mean = A_RAW,
+#                               variance = NOISE_MAGNITUDE).value
+
+# x_a[:] = noise
+
+x_a.setValue(GaussianNoiseVariable(mesh=mesh,
+                                   mean=A_RAW,
+                                   variance=NOISE_MAGNITUDE)
+)
 
 # def g(x_a):
 #     if GIBBS == "FH":
@@ -98,7 +104,7 @@ while elapsed < duration:
     print(end-start)
     if (timestep % time_stride ==0):
         vw = VTKCellViewer(vars=(x_a, mu_AB))
-        vw.plot(filename="%s_output.vtk" %elapsed)
+        vw.plot(filename="%s_output.%d.vtk" %(elapsed, parallelComm.procID))
 
 
 

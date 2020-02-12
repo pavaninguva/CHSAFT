@@ -12,7 +12,7 @@ for vtk in vtk_list:
     # Access the last four characters in the path and replace them with .txt
     os.rename(vtk, vtk[:-4] + ".txt")
 
-txt_list = glob.glob("*output.txt")
+txt_list = glob.glob("*output.*.txt")
 
 def replace(source_file_path, pattern, substring):
     fh, target_file_path = mkstemp()
