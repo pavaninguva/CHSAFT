@@ -22,7 +22,7 @@ print ("Yay")
 
 # # Define mesh
 # mesh = Grid2D(dx=dx, dy=dx, nx=N_CELLS, ny=N_CELLS)
-mesh = Grid2D(nx=50.0, ny=50.0, dx=0.5, dy=0.5)
+mesh = Grid2D(nx=64.0, ny=64.0, dx=1.0, dy=1.0)
 print ("mesh loaded")
 
 # We need to define the relevant variables: 
@@ -91,6 +91,9 @@ solver = LinearLUSolver(tolerance=1e-10, iterations=25)
 start = time.time()
 
 while elapsed < duration: 
+    if (timestep == 0):
+        vw = VTKCellViewer(vars=(x_a, mu_AB))
+        vw.plot(filename="0_output.%d.vtk" %(parallelComm.procID))
     elapsed += dt
     timestep += 1
     x_a.updateOld()

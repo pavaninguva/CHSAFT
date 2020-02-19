@@ -5,6 +5,7 @@ import random
 from dolfin import *
 import csv
 import os
+import time
 from parameters.params import (
     A_RAW,
     NOISE_MAGNITUDE,
@@ -203,13 +204,12 @@ elif SOLVER_CONFIG == "KRYLOV":
     solver = CustomSolver()
 
 
-    
-
-
-
 # Initialising the output files
 gibbs_list = []
-file = XDMFFile("output.xdmf")
+# file = XDMFFile("output.xdmf")
+file = File("output.pvd", "compressed")
+
+start = time.time()
 
 t = 0.0
 time_stride = TIME_STRIDE
@@ -229,7 +229,8 @@ while (t < TIME_MAX):
 
     fpath = "./output_gibbs.csv"
     headers = ["time", "gibbs"]
-
+    end = time.time()
+    print(end-start)
     # Write header row (for first timestep)
     if not os.path.exists(fpath):
         with open(fpath,"w") as f:
@@ -241,5 +242,6 @@ while (t < TIME_MAX):
         w.writerow({"time": float(t), "gibbs": float(gibbs)})
 
     if (timestep % time_stride ==0):
-        file.write (ch.split()[0], t)
+        # file.write (ch.split()[0], t)
+        file << (ch.split()[0], t)
 

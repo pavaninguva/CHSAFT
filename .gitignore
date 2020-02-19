@@ -18,6 +18,7 @@ core*
 *.h5
 *.xdmf
 2019*
+*.txt
 
 # Data files
 *.csv
