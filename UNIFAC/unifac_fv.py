@@ -79,7 +79,8 @@ This section deals with calculating the combinatorial contribution
 
 This requires calculating \phi_{i} which itself is dependent on r_{i}
 """
-
+# The input to this function is the str of the species of interest. 
+# It will then use this as the key to obtain the dictionary values from the necessary dicts
 def r_i (Species):
     r = 0
     for group in list(Polymer_groups[Species].keys()):
@@ -89,10 +90,16 @@ def r_i (Species):
 
 print (r_i("PMMA"))
 
-def phi_i ():
-    var = ()
+def phi_i (x_i, r_i_1, r_i_2):
+    phi = (x_i*(r_i_1**(0.75)))/((x_i*(r_i_1**(0.75)))+((1.0-x_i)*(r_i_2**(0.75))))
 
+    return phi
 
+def ln_gamma_combi_i (phi, x_i):
+    ln_gamma_combi = ln(phi / x_i) + 1 - (phi / x_i)
+
+    return ln_gamma_combi
+    
 
 """
 This section deals with the free volume contribution i.e. \gamma_{FV}
