@@ -1,13 +1,30 @@
+
+from numpy import log as ln
+
 """
 This section is for capturing the physical properties / group parameters of the polymers
 
 We define the extent of polymerisation, number of groups etc
 """
+
 # Update the input polymer properties as needed
 Polymer_length = {
-    "PMMA": 1000,
-    "PS":1000,
-    "PB":1000
+    "PMMA": 490,
+    "PS":490,
+    "PB":490
+}
+
+# Molecular weight of each segment: 
+Segment_mw = {
+    "PMMA": 100.1,
+    "PS": 104.1,
+    "PB": 54.1
+}
+
+# C_{i} per unit M_{w} 
+c_i_coeff = {
+    "PMMA": 0.0092,
+    "PS": 0.0066,
 }
 
 # Molar group volumes of all relevant groups
@@ -123,4 +140,61 @@ def volume_i (Species, Temp):
     volume = 1 / rho
 
     return volume
+
+# Could possibly refactor red_volume_i to generalise the inputs to simply those as defined in red_volume_mix
+def red_volume_i (vol, r_i_1):
+    red_volume = vol/(15.17*1.28*r_i_1)
+
+    return red_volume
+
+def red_volume_mix (species_1, species_2, Temp, x_1):
+    # Calculate weight fractions from mole fractions
+    w_1 = x_1*(Polymer_length[species_1]*Segment_mw[species_1])/((x_1*Polymer_length[species_1]*Segment_mw[species_1])+((1.0-x_1)*Polymer_length[species_2]*Segment_mw[species_2]))
+    w_2 = (1.0-x_1)*(Polymer_length[species_2]*Segment_mw[species_2])/((x_1*Polymer_length[species_1]*Segment_mw[species_1])+((1.0-x_1)*Polymer_length[species_2]*Segment_mw[species_2]))
+    
+    red_vol_mix = (volume_i(species_1, Temp)*w_1 + volume_i(species_2, Temp)*w_2)/(15.17*1.28*(r_i(species_1)*w_1 + r_i(species_2)*w_2))
+
+    return red_vol_mix
+
+def C_i_coeff (species):
+    if species == "PMMA":
+        C_1 = c_i_coeff[species]*Polymer_length[species]*Segment_mw[species]
+    
+    elif species == "PS":
+        C_1 = c_i_coeff[species]*Polymer_length[species]*Segment_mw[species]
+    
+    elif species == "PB":
+        C_1 = -0.640 + ((0.6744*0.146*2.0) + (1.1167*0.304))*Polymer_length[species]
+
+    return C_1
+
+def ln_gamma_fv_i(species_1, species_2, Temp, x_1):
+
+    red_v_i_third = (red_volume_i(volume_i(species_1, Temp), r_i(species_1)))**(1.0/3.0)
+
+    red_v_mix_third = (red_volume_mix(species_1, species_2, Temp, x_1))**(1.0/3.0)
+
+    red_v_i_ = (red_volume_i(volume_i(species_1, Temp), r_i(species_1)))
+
+    red_v_mix_ = (red_volume_mix(species_1, species_2, Temp, x_1))
+
+    ln_gamma_fv = 3.0*C_i_coeff(species_1) * ln((red_v_i_third- 1.0)/(red_v_mix_third - 1.0)) - C_i_coeff(species_1)*((red_v_i_/red_v_mix_)-1.0)*((1.0 - (1.0/red_v_i_third))**(-1.0))
+    
+    return ln_gamma_fv
+
+print(ln_gamma_fv_i("PS", "PB", 30.0, 0.5))
+
+
+"""
+This section is to evaluate the residual contribution to the activity coefficient
+"""
+
+
+
+
+
+"""
+This section is to add up the respective contributions from the activity coeffcient 
+
+"""
 
