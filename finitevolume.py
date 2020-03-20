@@ -1,6 +1,7 @@
-from fipy import CellVariable, Grid2D, GaussianNoiseVariable, DiffusionTerm, TransientTerm, ImplicitSourceTerm, VTKCellViewer, LinearLUSolver, parallelComm
+from fipy import CellVariable, Grid2D, GaussianNoiseVariable, DiffusionTerm, TransientTerm, ImplicitSourceTerm, VTKCellViewer, LinearLUSolver, parallelComm, ExplicitDiffusionTerm
 from fipy.tools import numerix
 import time
+from fipy import PeriodicGrid2D
 
 
 from params_fipy import (
@@ -22,7 +23,7 @@ print ("Yay")
 
 # # Define mesh
 # mesh = Grid2D(dx=dx, dy=dx, nx=N_CELLS, ny=N_CELLS)
-mesh = Grid2D(nx=64.0, ny=64.0, dx=1.0, dy=1.0)
+mesh = PeriodicGrid2D(nx=10.0, ny=10.0, dx=1.0, dy=1.0)
 print ("mesh loaded")
 
 # We need to define the relevant variables: 
@@ -31,16 +32,16 @@ mu_AB = CellVariable(name=r"mu_AB", mesh = mesh, hasOld=1)
 
 
 # We need to introduce the noise
-# noise = GaussianNoiseVariable(mesh=mesh,
-#                               mean = A_RAW,
-#                               variance = NOISE_MAGNITUDE).value
+noise = GaussianNoiseVariable(mesh=mesh,
+                              mean = A_RAW,
+                              variance = NOISE_MAGNITUDE).value
 
-# x_a[:] = noise
+x_a[:] = noise
 
-x_a.setValue(GaussianNoiseVariable(mesh=mesh,
-                                   mean=A_RAW,
-                                   variance=NOISE_MAGNITUDE)
-)
+# x_a.setValue(GaussianNoiseVariable(mesh=mesh,
+#                                    mean=A_RAW,
+#                                    variance=NOISE_MAGNITUDE)
+# )
 
 # def g(x_a):
 #     if GIBBS == "FH":
@@ -73,6 +74,9 @@ eq1 = (TransientTerm(var=x_a)) == DiffusionTerm(coeff = x_a * (1 - x_a), var=mu_
 # eqn 2 is the chemical potential definition
 eq2 = (ImplicitSourceTerm(coeff=1. , var=mu_AB)) == ImplicitSourceTerm(coeff=d2gdx_a2, var=x_a) - d2gdx_a2 * x_a + dgdx_a - DiffusionTerm(coeff=kappa, var=x_a)
 
+# write eq2 without the fipy trick:
+eq3 = (ImplicitSourceTerm(coeff=1, var=mu_AB)) == dgdx_a - DiffusionTerm(coeff= kappa, var = x_a)
+
 # Adding the equations together
 eq = eq1 & eq2
 
@@ -86,7 +90,7 @@ time_stride = TIME_STRIDE
 timestep = 0
 
 # Defining the solver to improve numerical stabilty
-solver = LinearLUSolver(tolerance=1e-10, iterations=25)
+solver = LinearLUSolver(tolerance=1e-10, iterations=50, precon= "lu")
 # solver = PETSc.KSP().create()
 start = time.time()
 

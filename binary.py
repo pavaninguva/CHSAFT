@@ -139,7 +139,15 @@ ch_init = InitialConditions(degree=1)
 ch.interpolate(ch_init)
 ch0.interpolate(ch_init)
 
-kappa = (2.0/3.0)*chi_AB
+kappa = (1.0/6.0)*chi_AB
+
+constraint_u = Expression(("xmax - x[0]","ymax - x[1]"),
+                          xmax=1.0+DOLFIN_EPS,  ymax=1.0, degree=1)
+constraint_l = Expression(("xmin - x[0]","ymin - x[1]"),
+                          xmin=-1.0-DOLFIN_EPS, ymin=-1.0, degree=1)
+
+x_a_min = interpolate(constraint_l, CH)
+x_a_max = interpolate(constraint_u, CH)
 
 if GIBBS == "FH":
     #Flory-Huggins Expression
@@ -174,6 +182,7 @@ a = derivative(F, ch, dch)
 if SOLVER_CONFIG == "LU":
 
     problem = CahnHilliardEquation(a, F)
+    problem.set_bounds(x_a_min, x_a_max)
     solver = NewtonSolver()
     solver.parameters["linear_solver"] = "lu"
     #solver.parameters["linear_solver"] = "gmres"
@@ -195,8 +204,9 @@ elif SOLVER_CONFIG == "KRYLOV":
             PETScOptions.set("ksp_monitor")
             PETScOptions.set("pc_type", "hypre")
             PETScOptions.set("pc_hypre_type", "euclid")
-            PETScOptions.set("ksp_rtol", "1.0e-6")
-            PETScOptions.set("ksp_atol", "1.0e-10")
+            PETScOptions.set("ksp_rtol", "1.0e-8")
+            PETScOptions.set("ksp_atol", "1.0e-16")
+            PETScOptions.set('ksp_max_it', '1000')
 
             self.linear_solver().set_from_options()
 
