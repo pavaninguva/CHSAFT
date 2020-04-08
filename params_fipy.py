@@ -43,3 +43,8 @@ elif MATERIAL_CHOICE == "PS_PB":
     N_A = params_dict["N_A_PS_PB"]
     N_B = params_dict["N_B_PS_PB"]
     # Insert other declarations 
+elif MATERIAL_CHOICE == "Validation":
+    chi_AB = params_dict["chi_AB_Validation"]
+    N_A = params_dict["N_A_Validation"]
+    N_B = params_dict["N_B_Validation"]
+    # Insert other declarations 

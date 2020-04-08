@@ -1,21 +1,21 @@
 #
 # Mole fraction of A
-A_RAW: 0.4
+A_RAW: 0.5
 
 # Thermo model
 GIBBS: FH
 
 # Materials
-MATERIAL_CHOICE: PS_PB
+MATERIAL_CHOICE: Validation
 
 #Numerics
 NOISE_MAGNITUDE: 0.01
-TIME_MAX: 200000
-DT: 0.5
-N_CELLS: 5
-DOMAIN_LENGTH: 5
+TIME_MAX: 400000
+DT: 2.0
+N_CELLS: 128
+DOMAIN_LENGTH: 128
 theta_ch: 1
-TIME_STRIDE: 10000
+TIME_STRIDE: 5000
 MESH_TYPE: structured
 FINITE_ELEMENT: CG
 FINITE_ELEMENT_ORDER: 1
@@ -24,7 +24,7 @@ SOLVER_CONFIG: LU
 
 # PS_PMMA
 ## FH
-chi_AB_PS_PMMA: 0.009
+chi_AB_PS_PMMA: 0.004
 N_A_PS_PMMA: 2690
 N_B_PS_PMMA: 4000
 
@@ -40,4 +40,8 @@ N_B_PS_PB: 7780
 # Sweeping Residual
 DESIRED_RESIDUAL: 0.1
 
-
+# Validation
+## FH
+chi_AB_Validation: 0.0075
+N_A_Validation: 400
+N_B_Validation: 400

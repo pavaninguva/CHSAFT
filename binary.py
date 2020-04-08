@@ -139,7 +139,7 @@ ch_init = InitialConditions(degree=1)
 ch.interpolate(ch_init)
 ch0.interpolate(ch_init)
 
-kappa = (1.0/6.0)*chi_AB
+kappa = (2.0/3.0)*chi_AB
 
 constraint_u = Expression(("xmax - x[0]","ymax - x[1]"),
                           xmax=1.0+DOLFIN_EPS,  ymax=1.0, degree=1)
@@ -182,13 +182,14 @@ a = derivative(F, ch, dch)
 if SOLVER_CONFIG == "LU":
 
     problem = CahnHilliardEquation(a, F)
-    problem.set_bounds(x_a_min, x_a_max)
+    # problem.set_bounds(x_a_min, x_a_max)
     solver = NewtonSolver()
     solver.parameters["linear_solver"] = "lu"
     #solver.parameters["linear_solver"] = "gmres"
     #solver.parameters["preconditioner"] = "ilu"
     solver.parameters["convergence_criterion"] = "residual"
-    solver.parameters["relative_tolerance"] = 1e-6
+    solver.parameters["relative_tolerance"] = 1e-10
+    solver.parameters["absolute_tolerance"] = 1e-16
 
 elif SOLVER_CONFIG == "KRYLOV":
     class CustomSolver(NewtonSolver):
@@ -233,7 +234,7 @@ while (t < TIME_MAX):
 
     # Assembling the various terms of the Landau-Ginzburg free energy functional
     homogenous_energy = assemble(g * dx())
-    gradient_energy = assemble(Constant(0.5) * kappa * dot(grad(x_a), grad(x_a)) * dx())
+    gradient_energy = assemble(Constant(0.5)*kappa * dot(grad(x_a), grad(x_a)) * dx())
     gibbs= homogenous_energy + gradient_energy
     gibbs_list.append(gibbs)
 

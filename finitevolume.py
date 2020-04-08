@@ -23,7 +23,7 @@ print ("Yay")
 
 # # Define mesh
 # mesh = Grid2D(dx=dx, dy=dx, nx=N_CELLS, ny=N_CELLS)
-mesh = PeriodicGrid2D(nx=10.0, ny=10.0, dx=1.0, dy=1.0)
+mesh = PeriodicGrid2D(nx=50.0, ny=50.0, dx=0.1, dy=0.1)
 print ("mesh loaded")
 
 # We need to define the relevant variables: 
@@ -66,10 +66,13 @@ elif GIBBS != "FH":
 # Define the equations
 
 # evaluating kappa
-kappa = (1.0/6.0)*chi_AB
+kappa = (2.0/3.0)*chi_AB
 
 # eqn 1 is the 2nd order transport equation
 eq1 = (TransientTerm(var=x_a)) == DiffusionTerm(coeff = x_a * (1 - x_a), var=mu_AB)
+
+# Try constant mobility
+eq0 = (TransientTerm(var=x_a)) == DiffusionTerm(coeff = 1, var=mu_AB)
 
 # eqn 2 is the chemical potential definition
 eq2 = (ImplicitSourceTerm(coeff=1. , var=mu_AB)) == ImplicitSourceTerm(coeff=d2gdx_a2, var=x_a) - d2gdx_a2 * x_a + dgdx_a - DiffusionTerm(coeff=kappa, var=x_a)
@@ -90,7 +93,7 @@ time_stride = TIME_STRIDE
 timestep = 0
 
 # Defining the solver to improve numerical stabilty
-solver = LinearLUSolver(tolerance=1e-10, iterations=50, precon= "lu")
+solver = LinearLUSolver(tolerance=1e-9, iterations=50, precon= "lu")
 # solver = PETSc.KSP().create()
 start = time.time()
 
@@ -105,6 +108,8 @@ while elapsed < duration:
     res = 1e+10
     while res > 1e-10:
         res = eq.sweep(dt=dt, solver=solver)
+        x_a.setValue(0.0, where=x_a < 0.0)
+        x_a.setValue(1.0, where=x_a > 1.0 )
         print ("sweep!")
     print (elapsed)
     end = time.time()
