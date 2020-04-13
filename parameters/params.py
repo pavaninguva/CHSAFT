@@ -7,6 +7,8 @@ with open("params.yml", 'r') as stream:
     params_dict = yaml.safe_load(stream)
     print (params_dict)
 
+# Cahn Hilliard Model type: 
+MOBILITY_MODEL = params_dict["MOBILITY_MODEL"]
 
 # Compositon parameters
 A_RAW = params_dict["A_RAW"]
@@ -14,6 +16,7 @@ NOISE_MAGNITUDE = params_dict["NOISE_MAGNITUDE"]
 
 # Material parameters (either PS_PMMA / PS_PB)
 MATERIAL_CHOICE = params_dict["MATERIAL_CHOICE"]
+SIZE_DISPARITY = params_dict["SIZE_DISPARITY"]
 
 
 # Homogenous Free energy function (PC_SAFT, FH, etc)

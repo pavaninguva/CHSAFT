@@ -24,7 +24,8 @@ from parameters.params import (
     FINITE_ELEMENT,
     FINITE_ELEMENT_ORDER,
     SOLVER_CONFIG,
-    MOBILITY_MODEL
+    MOBILITY_MODEL,
+    SIZE_DISPARITY
 )
 
 
@@ -141,7 +142,10 @@ ch_init = InitialConditions(degree=1)
 ch.interpolate(ch_init)
 ch0.interpolate(ch_init)
 
-kappa = (2.0/3.0)*chi_AB
+if SIZE_DISPARITY == "SMALL":
+    kappa = (2.0/3.0)*chi_AB
+elif SIZE_DISPARITY == "LARGE": 
+    kappa = (1.0/3.0)*chi_AB
 
 
 if GIBBS == "FH":

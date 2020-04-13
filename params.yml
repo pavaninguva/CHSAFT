@@ -4,9 +4,9 @@ A_RAW: 0.5
 
 # Thermo model
 GIBBS: FH
+SIZE_DISPARITY: SMALL
 
 # Mobility model
-
 MOBILITY_MODEL: Variable
 
 # Materials
