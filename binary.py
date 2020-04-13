@@ -6,6 +6,7 @@ from dolfin import *
 import csv
 import os
 import time
+import sys
 from parameters.params import (
     A_RAW,
     NOISE_MAGNITUDE,
@@ -22,7 +23,8 @@ from parameters.params import (
     GIBBS,
     FINITE_ELEMENT,
     FINITE_ELEMENT_ORDER,
-    SOLVER_CONFIG
+    SOLVER_CONFIG,
+    MOBILITY_MODEL
 )
 
 
@@ -141,13 +143,6 @@ ch0.interpolate(ch_init)
 
 kappa = (2.0/3.0)*chi_AB
 
-constraint_u = Expression(("xmax - x[0]","ymax - x[1]"),
-                          xmax=1.0+DOLFIN_EPS,  ymax=1.0, degree=1)
-constraint_l = Expression(("xmin - x[0]","ymin - x[1]"),
-                          xmin=-1.0-DOLFIN_EPS, ymin=-1.0, degree=1)
-
-x_a_min = interpolate(constraint_l, CH)
-x_a_max = interpolate(constraint_u, CH)
 
 if GIBBS == "FH":
     #Flory-Huggins Expression
@@ -168,13 +163,25 @@ F_a = (
     + dt * x_a * (1.0 - x_a) * dot(grad(mu_AB_mid), grad(h_1)) * dx
 )
 
+F_a_constant = (
+    x_a * h_1 * dx
+    - x_a0 * h_1 * dx
+    + dt * dot(grad(mu_AB_mid), grad(h_1)) * dx
+)
+
 F_mu_AB = (
     mu_AB * j_1 * dx
     - dgdx_a * j_1 * dx
     - kappa * dot(grad(x_a), grad(j_1)) * dx
 )
 
-F = F_a + F_mu_AB
+if MOBILITY_MODEL == "Variable":
+    F = F_a + F_mu_AB
+elif MOBILITY_MODEL == "Constant":
+    F = F_a_constant + F_mu_AB
+else:
+    print("wrong model implemented")
+    sys.exit()
 
 #Compute directional derivative about u in the direction of du
 a = derivative(F, ch, dch)

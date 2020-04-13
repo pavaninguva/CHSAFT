@@ -5,6 +5,10 @@ A_RAW: 0.5
 # Thermo model
 GIBBS: FH
 
+# Mobility model
+
+MOBILITY_MODEL: Variable
+
 # Materials
 MATERIAL_CHOICE: Validation
 
@@ -12,8 +16,8 @@ MATERIAL_CHOICE: Validation
 NOISE_MAGNITUDE: 0.01
 TIME_MAX: 400000
 DT: 2.0
-N_CELLS: 128
-DOMAIN_LENGTH: 128
+N_CELLS: 5
+DOMAIN_LENGTH: 5
 theta_ch: 1
 TIME_STRIDE: 5000
 MESH_TYPE: structured
@@ -42,6 +46,6 @@ DESIRED_RESIDUAL: 0.1
 
 # Validation
 ## FH
-chi_AB_Validation: 0.0075
-N_A_Validation: 400
-N_B_Validation: 400
+chi_AB_Validation: 0.0064
+N_A_Validation: 700
+N_B_Validation: 700
