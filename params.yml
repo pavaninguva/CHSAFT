@@ -1,25 +1,28 @@
 #
 # Mole fraction of A
-A_RAW: 0.5
+A_RAW: 0.789
 
 # Thermo model
-GIBBS: FH
+# Options for GIBBS are: "FH", "TaylorApproxFullFH", "TaylorApproxLogOnlyFH"
+GIBBS: TaylorApproxLogOnlyFH
+
+# Options for SIZE_DISPARITY are: "SMALL", "LARGE"
 SIZE_DISPARITY: SMALL
 
 # Mobility model
-MOBILITY_MODEL: Variable
+MOBILITY_MODEL: Constant
 
 # Materials
 MATERIAL_CHOICE: Validation
 
 #Numerics
 NOISE_MAGNITUDE: 0.01
-TIME_MAX: 400000
+TIME_MAX: 1000000
 DT: 2.0
 N_CELLS: 5
 DOMAIN_LENGTH: 5
 theta_ch: 1
-TIME_STRIDE: 5000
+TIME_STRIDE: 100
 MESH_TYPE: structured
 FINITE_ELEMENT: CG
 FINITE_ELEMENT_ORDER: 1
@@ -47,5 +50,5 @@ DESIRED_RESIDUAL: 0.1
 # Validation
 ## FH
 chi_AB_Validation: 0.0064
-N_A_Validation: 700
-N_B_Validation: 700
+N_A_Validation: 2690
+N_B_Validation: 3500

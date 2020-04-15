@@ -7,6 +7,7 @@ import csv
 import os
 import time
 import sys
+from FHTaylor import taylorapprox_fullFH, taylorapprox_logonlyFH
 from parameters.params import (
     A_RAW,
     NOISE_MAGNITUDE,
@@ -144,15 +145,25 @@ ch0.interpolate(ch_init)
 
 if SIZE_DISPARITY == "SMALL":
     kappa = (2.0/3.0)*chi_AB
+    print ("about the same size")
 elif SIZE_DISPARITY == "LARGE": 
     kappa = (1.0/3.0)*chi_AB
+    print ("big size difference")
+
 
 
 if GIBBS == "FH":
     #Flory-Huggins Expression
     g = ( x_a * ln(x_a) / N_A ) + ((1.0-x_a)*ln(1-x_a)/ N_B) + x_a*(1.0-x_a)*chi_AB 
-elif GIBBS != "FH":
-    print ("Other free energy functions yet to be implemented")
+    print("full FH")
+elif GIBBS == "TaylorApproxFullFH":
+    g = taylorapprox_fullFH(N_A, N_B, chi_AB, x_a)
+    print("full taylor approx of FH")
+elif GIBBS == "TaylorApproxLogOnlyFH":
+    g = taylorapprox_logonlyFH(N_A, N_B, chi_AB, x_a)
+    print ("Taylor approx of log term in FH only")
+else: 
+    print ("work harder")
 
 # Using the fenics autodifferentiation toolkit 
 dgdx_a = diff(g,x_a)
@@ -181,8 +192,10 @@ F_mu_AB = (
 
 if MOBILITY_MODEL == "Variable":
     F = F_a + F_mu_AB
+    print ("work hard model")
 elif MOBILITY_MODEL == "Constant":
     F = F_a_constant + F_mu_AB
+    print("less work hehe")
 else:
     print("wrong model implemented")
     sys.exit()
