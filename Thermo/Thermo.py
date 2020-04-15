@@ -3,10 +3,10 @@ import pandas as pd
 from math import pi
 import matplotlib.pyplot as plt
 from scipy.optimize import fsolve, least_squares
-## Main PC-SAFT Code that obtain the residual Helmholtz free energy and Pressure ##
+
 class PCSAFT(object):
  def __init__(self, nsegment, Mr, epsilon,sigma,NParticles,Temperature,Volume,xComp,k):
-        self.epsilon = np.array(epsilon)*1.38064852e-23
+        self.epsilon = np.array(epsilon)
         self.sigma = np.array(sigma)
         self.k=np.array(k)
         self.nsegment = np.array(nsegment)
@@ -19,7 +19,7 @@ class PCSAFT(object):
  def a_res(self):
         a_hc=self.a_hc()
         a_disp=self.a_disp()
-        A=0+a_disp
+        A=a_hc+a_disp
         return A
 
     ## Hard Chain Term ##
@@ -30,10 +30,15 @@ class PCSAFT(object):
         g_hs=self.g_hs()
         a_hs=self.a_hs()
         m_mean=self.m_mean()
-        for i in range(len(xComp)):
-            B=xComp[i]*(nsegment[i]-1)*np.log(g_hs[i])
-            result=result+B
-        A=m_mean*a_hs-result
+        
+        # PC-SAFT
+        # for i in range(len(xComp)):
+        #     B=xComp[i]*(nsegment[i]-1)*np.log(g_hs[i])
+        #     result=result+B
+        # A=m_mean*a_hs-result
+        
+        # sPC-SAFT
+        A=m_mean*a_hs-(m_mean-1)*np.log(g_hs)
         return A
 
  def m_mean(self):
@@ -50,18 +55,26 @@ class PCSAFT(object):
         zeta1=self.zetan(1)
         zeta2=self.zetan(2)
         zeta3=self.zetan(3)
-        A=1/zeta0*((3*zeta1*zeta2)/(1-zeta3)+pow(zeta2,3)/(zeta3*pow((1-zeta3),2))+(pow(zeta2,3)/pow(zeta3,2)-zeta0)*np.log(1-zeta3))
+        
+        # PC-SAFT
+        # A=1/zeta0*((3*zeta1*zeta2)/(1-zeta3)+pow(zeta2,3)/(zeta3*pow((1-zeta3),2))+(pow(zeta2,3)/pow(zeta3,2)-zeta0)*np.log(1-zeta3))
+        
+        # sPC-SAFT
+        A=(4*zeta3-3*pow(zeta3,2))/pow(1-zeta3,2)
         return A
 
  def g_hs(self):
-        zeta0=self.zetan(0)
-        zeta1=self.zetan(1)
         zeta2=self.zetan(2)
         zeta3=self.zetan(3)
         HSd=self.HSd()
-        A=HSd
-        for i in range(len(HSd)):
-            A[i]=1/(1-zeta3)+pow(HSd[i],2)*3*zeta2/(2*HSd[i]*pow((1-zeta3),2))+pow(HSd[i],4)*2*pow(zeta2,2)/((pow(2*HSd[i],2))*pow((1-zeta3),3))
+        
+        # PC-SAFT
+        # A=HSd
+        # for i in range(len(HSd)):
+        #     A[i]=1/(1-zeta3)+pow(HSd[i],2)*3*zeta2/(2*HSd[i]*pow((1-zeta3),2))+pow(HSd[i],4)*2*pow(zeta2,2)/((pow(2*HSd[i],2))*pow((1-zeta3),3))
+        
+        # sPC-SAFT
+        A=(1-zeta3/2)/pow(1-zeta3,3)    
         return A
 
  def zetan(self,m):
@@ -78,9 +91,18 @@ class PCSAFT(object):
  def HSd(self):
         sigma=self.sigma
         epsilon=self.epsilon
-        k_B=1.38064852e-23
         Temp=self.Temp
-        return sigma*(1-0.12*np.exp(-3*epsilon/(k_B*Temp)))
+        return sigma*(1-0.12*np.exp(-3*epsilon/(Temp)))
+ def sHSd(self):
+        HSd=self.HSd()
+        nsegment=self.nsegment
+        xComp=self.xComp
+        A=0
+        B=0
+        for i in range(len(xComp)):
+               A+=xComp[i]*nsegment[i]*pow(HSd[i],3)
+               B+=xComp[i]*nsegment[i]
+        return pow(A/B,1/3)
 
     ##Dispersion Term
  def a_disp(self):
@@ -105,12 +127,11 @@ class PCSAFT(object):
         epsilon=self.epsilon
         sigma=self.sigma
         Temp=self.Temp
-        k_B=1.38064852e-23
         k=self.k
         result=0.
         for i in range(len(xComp)):
             for j in range(len(xComp)):
-                result=xComp[i]*xComp[j]*nsegment[i]*nsegment[j]*pow((np.sqrt(epsilon[i]*epsilon[j])*(1-k[i,j]))/(k_B*Temp),m)*pow(0.5*(sigma[i]+sigma[j]),3)+result
+                result=xComp[i]*xComp[j]*nsegment[i]*nsegment[j]*pow((np.sqrt(epsilon[i]*epsilon[j])*(1-k[i,j]))/(Temp),m)*pow(0.5*(sigma[i]+sigma[j]),3)+result
         return result
 
  def I1(self):
@@ -160,25 +181,42 @@ class PCSAFT(object):
     g_hs=self.g_hs()
     dg_hs=self.dg_hs()
     t1=m_mean*Z_HS
-    t2=0.
-    for i in range(len(xComp)):
-        t2=xComp[i]*(nsegment[i]-1)*pow(g_hs[i],-1)*dg_hs[i]+t2
-    return t1-t2
+
+    # PC-SAFT
+    # t2=0.
+    # for i in range(len(xComp)):
+    #     t2=xComp[i]*(nsegment[i]-1)*pow(g_hs[i],-1)*dg_hs[i]+t2
+    # A = t1-t2
+    
+    # sPC-SAFT
+    A = t1+(1-m_mean)*pow(g_hs,-1)*dg_hs
+    return A
 
  def Z_HS(self):
     zeta0=self.zetan(0)
     zeta1=self.zetan(1)
     zeta2=self.zetan(2)
     zeta3=self.zetan(3)
-    return zeta3/(1-zeta3)+3*zeta1*zeta2/(zeta0*pow((1-zeta3),2))+(3*pow(zeta2,3)-zeta3*pow(zeta2,3))/(zeta0*pow((1-zeta3),3))
+    
+    # sPC-SAFT
+    A=2*zeta3*(2-zeta3)/pow(1-zeta3,3)
+    
+    # PC-SAFT
+    # A=zeta3/(1-zeta3)+3*zeta1*zeta2/(zeta0*pow((1-zeta3),2))+(3*pow(zeta2,3)-zeta3*pow(zeta2,3))/(zeta0*pow((1-zeta3),3))
+    return A
 
  def dg_hs(self):
     zeta2=self.zetan(2)
     zeta3=self.zetan(3)
     HSd=self.HSd()
-    A=HSd*0.
-    for i in range(len(HSd)):
-        A[i]=zeta3/pow((1-zeta3),2)+HSd[i]/2*(3*zeta2/pow((1-zeta3),2)+6*zeta2*zeta3/pow((1-zeta3),3))+pow(HSd[i]/2,2)*(4*pow(zeta2,2)/pow((1-zeta3),3)+6*pow(zeta2,2)*zeta3/pow((1-zeta3),4))
+    
+    # PC-SAFT
+    # A=HSd*0.
+    # for i in range(len(HSd)):
+    #     A[i]=zeta3/pow((1-zeta3),2)+HSd[i]/2*(3*zeta2/pow((1-zeta3),2)+6*zeta2*zeta3/pow((1-zeta3),3))+pow(HSd[i]/2,2)*(4*pow(zeta2,2)/pow((1-zeta3),3)+6*pow(zeta2,2)*zeta3/pow((1-zeta3),4))
+    
+    # sPC-SAFT
+    A=zeta3*(5-2*zeta3)/(2*pow(1-zeta3,4))
     return A 
  def Z_Disp(self):
     m2eo3=self.m2eno3(1)
@@ -234,9 +272,7 @@ class PCSAFT(object):
     k_B=1.38064852e-23
     return Z*NParticles*k_B*Temp/Vol
 
-## Gibbs Free Energy of Mixing code that uses PCSAFT to get the mixing function ##
-class  GibbsMixing(object):
-
+class  GibbsMixingPCSAFT(object):
  def __init__(self, nsegment, Mr, epsilon,sigma,NParticles,Temperature,Pressure,xComp,k):
         self.epsilon = np.array(epsilon)
         self.sigma = np.array(sigma)
@@ -252,12 +288,8 @@ class  GibbsMixing(object):
     Pre, nsegment, Mr, epsilon, sigma, NParticles, Temp, xComp, k = arg
     r=PCSAFT(nsegment,Mr,epsilon,sigma,NParticles,Temp,pow(10,Vol),xComp,k)
     Z=r.Z()
-    return Z*NParticles*k_B*Temp/Vol-Pre
+    return (Z*NParticles*k_B*Temp/pow(10,Vol)-Pre)
 
- def dPressure(self,Vol,*arg):
-    k_B=1.38064852e-23
-    P=self.Pressure(Vol,*arg)
-    return derivative(P,Vol, order=1)
  ## Gibbs Free Energy of Mixing ##
  def GibbsFreeMixing(self):
     xComp=self.xComp
@@ -272,46 +304,64 @@ class  GibbsMixing(object):
     tideal=0.
     tres=0.
     k_B=1.38064852e-23
-    self.vComp=np.zeros(len(xComp))
     for i in range(len(xComp)):
         tideal=xComp[i]*np.log(xComp[i])+tideal
-        Vol=least_squares(self.Pressure,np.log10(NParticles*nsegment[i]*pow(sigma[i],3)*pow(1-0.12*np.exp(-3*epsilon[i]/(k_B*Temp)),3)/0.9),bounds=(np.log10(sum(NParticles*nsegment[i]*pow(sigma[i],3)*pow(1-0.12*np.exp(-3*epsilon[i]/(k_B*Temp)),3)/0.99)),np.log10(sum(NParticles*nsegment[i]*pow(sigma[i],3)*pow(1-0.12*np.exp(-3*epsilon[i]/(k_B*Temp)),3)/0.8))),args=(Pre,[nsegment[i]],[Mr[i]],[epsilon[i]],[sigma[i]],NParticles,Temp,[1.],[[0.]]))
-        r=PCSAFT([nsegment[i]],[Mr[i]],[epsilon[i]],[sigma[i]],NParticles,Temp,pow(10,Vol.x[0]),[1.],[[0.]])
+        Vol1=least_squares(self.Pressure,np.log10(NParticles*nsegment[i]*pow(sigma[i],3)*pow(1-0.12*np.exp(-3*epsilon[i]/(Temp)),3))*1.05,bounds=(np.log10(sum(NParticles*nsegment[i]*pow(sigma[i],3)*pow(1-0.12*np.exp(-3*epsilon[i]/(Temp)),3)))*1.3,np.log10(sum(NParticles*nsegment[i]*pow(sigma[i],3)*pow(1-0.12*np.exp(-3*epsilon[i]/(Temp)),3)))*0.6),args=(Pre,[nsegment[i]],[Mr[i]],[epsilon[i]],[sigma[i]],NParticles,Temp,[1.],[[0.]]))
+        r=PCSAFT([nsegment[i]],[Mr[i]],[epsilon[i]],[sigma[i]],NParticles,Temp,pow(10,Vol1.x[0]),[1.],[[0.]])
         Z_res=r.Z()-1.
         a_res=r.a_res()
-        tres=(a_res+Z_res)*xComp[i]*NParticles*Temp*k_B+tres
-    Vol=least_squares(self.Pressure,np.log10(sum(NParticles*xComp*nsegment*pow(sigma,3)*pow(1-0.12*np.exp(-3*epsilon/(k_B*Temp)),3)/0.9)),bounds=(np.log10(sum(NParticles*xComp*nsegment*pow(sigma,3)*pow(1-0.12*np.exp(-3*epsilon/(k_B*Temp)),3)/0.99)),np.log10(sum(NParticles*xComp*nsegment*pow(sigma,3)*pow(1-0.12*np.exp(-3*epsilon/(k_B*Temp)),3)/0.8))),args=(Pre,nsegment,Mr,epsilon,sigma,NParticles,Temp,xComp,k))
+        tres=(a_res+Z_res)*xComp[i]+tres
+    Vol=least_squares(self.Pressure,np.log10(sum(NParticles*xComp*nsegment*pow(sigma,3)*pow(1-0.12*np.exp(-3*epsilon/(Temp)),3)))*1.05,bounds=(np.log10(sum(NParticles*xComp*nsegment*pow(sigma,3)*pow(1-0.12*np.exp(-3*epsilon/(Temp)),3)))*1.3,np.log10(sum(NParticles*xComp*nsegment*pow(sigma,3)*pow(1-0.12*np.exp(-3*epsilon/(Temp)),3)))*0.6),args=(Pre,nsegment,Mr,epsilon,sigma,NParticles,Temp,xComp,k))
+    # Vol=least_squares(self.Pressure,-2.7,bounds=(-3.2,-2.5),args=(Pre,nsegment,Mr,epsilon,sigma,NParticles,Temp,xComp,k))
     r=PCSAFT(nsegment,Mr,epsilon,sigma,NParticles,Temp,pow(10,Vol.x[0]),xComp,k)
     a_res=r.a_res()
     Z_res=r.Z()-1.
-    gMix=(a_res+Z_res)*NParticles*Temp*k_B
-    return tideal*NParticles*k_B*Temp+gMix-tres
+    print(10**Vol1.x[0],10**Vol.x[0])
+    
+    gMix=(a_res+Z_res)
 
-## How it works
-# r=GibbsMixing(Number of Segments,Molar Mass (kg/mol),Epsilon (K),Sigma (m),Number of Particles,Temperature (K),Pressure (MPa),Composition (Molar),Cross Interaction Parameter)
-## Example:
-r=GibbsMixing([68.855,30.704],[2350,1520],[284.70, 367.17],[3.8413e-10,4.1482e-10],[6.02e23],[340.],[1e5],[0.5,0.5],[[0.,0.02],[0.02,0.]])
-print(r.GibbsFreeMixing())
-# PARAMETERS:
+    return (tideal+gMix-tres)*NParticles*Temp*k_B
 
-# Pure Component:
-# PS:
-    # m/Mr=0.0205
-    # sigma=4.152e-10
-    # epsilon=348.2
-# PMMA:
-    # m/Mr=0.027
-    # sigma=3.553e-10
-    # epsilon=264.6
-# BR:
-    # m/Mr=0.0263
-    # sigma=4.008e-10
-    # epsilon=279.4
+class GibbsMixingFH(object):
+ def __init__(self,Temp,xComp,Nmono,Vmono,A,B,C):
+        self.xComp=np.array(xComp)
+        self.Nmono=np.array(Nmono)
+        self.Vmono=np.array(Vmono)
+        self.A=np.array(A)
+        self.B=np.array(B)
+        self.C=np.array(C)
+        self.Temp=np.array(Temp)
+ def GibbsFreeMixing(self):
+       A=self.A
+       B=self.B
+       C=self.C
+       Temp=self.Temp
+       Nmono=self.Nmono
+       Vmono=self.Vmono
+       xComp=self.xComp
+       N_A=6.02e23
+       chi=(A+B/Temp+C/Temp**2)
+       vComp=np.zeros(len(xComp))
+       vComp[0]=Nmono[0]*Vmono[0]*xComp[0]/(sum(Nmono*Vmono*xComp))
+       vComp[1]=Nmono[1]*Vmono[1]*xComp[1]/(sum(Nmono*Vmono*xComp))
+       Vol=Nmono*Vmono
+       t1=vComp[0]/Vol[0]*np.log(vComp[0])
+       t2=(1-vComp[0])/Vol[1]*np.log(1-vComp[0])
+       t3=chi*vComp[0]*(1-vComp[0])
+       return t1+t2+t3
 
-# Cross Interaction:
-# PS(1250)+PMMA(6350):
-    # k_ij=-0.0095
-# PS(1520/1200)+BR(2350)
-    # k_ij=0.001 or 0.0001
-# PS(1520/1200)+BR(920)
-    # k_ij=0.0012 or 0.0002
+ def dGibbsFreeMixing(self):
+       A=self.A
+       B=self.B
+       C=self.C
+       Temp=self.Temp
+       Nmono=self.Nmono
+       Vmono=self.Vmono
+       xComp=self.xComp
+       N_A=6.02e23
+       chi=(A+B/Temp+C/Temp**2)
+       vComp=np.zeros(len(xComp))
+       vComp[0]=Nmono[0]*Vmono[0]*xComp[0]/(sum(Nmono*Vmono*xComp))
+       vComp[1]=Nmono[1]*Vmono[1]*xComp[1]/(sum(Nmono*Vmono*xComp))
+       Vol=Nmono*Vmono
+       return np.log(vComp[0])/Vol[0]-np.log(1-vComp[0])/Vol[1]-2*chi*vComp[0]+chi-pow(Vol[1],-1)+pow(Vol[0],-1)
