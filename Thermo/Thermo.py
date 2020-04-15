@@ -365,3 +365,209 @@ class GibbsMixingFH(object):
        vComp[1]=Nmono[1]*Vmono[1]*xComp[1]/(sum(Nmono*Vmono*xComp))
        Vol=Nmono*Vmono
        return np.log(vComp[0])/Vol[0]-np.log(1-vComp[0])/Vol[1]-2*chi*vComp[0]+chi-pow(Vol[1],-1)+pow(Vol[0],-1)
+
+class GibbsMixingUNIFAC(object):
+ def __init__(self,Species,xComp,Temp):
+       self.xComp = xComp
+       self.Temp = Temp
+       self.Species = Species
+       # Combinatorial contribution
+ def ln_gamma_comb (self):
+       xComp = self.xComp
+
+       phi = self.phi()
+
+       ln_gamma_comb = np.log(phi/xComp) + 1 - (phi/xComp)
+       return ln_gamma_comb
+
+ def  phi(self):
+       xComp = self.xComp
+       ri    = self.r_i()
+       phi   = np.zeros((len(ri)))
+       A=0.
+       for i in range(len(xComp)):
+              A += ((xComp[i]*(ri[i]**(0.75))))
+       phi = xComp*ri**(0.75)/A
+       return phi
+
+ def r_i (self):
+       Species = self.Species
+       r  = np.zeros((len(Species)))
+       for i in range(len(Species)):
+              for group in list(Polymer_groups[Species[i]].keys()):
+                     r[i] += Polymer_groups[Species[i]][group]*R_k[group]*Polymer_length[Species[i]]
+       return r
+
+ # Free volume contribution
+ def volume(self):
+       Species = self.Species
+       Temp    = self.Temp
+       volume  = np.zeros((len(Species)))
+       for i in range(len(Species)):
+              if Species[i] in list(T_G.keys()):
+                     if Temp <= T_G[Species[i]]:
+                            coeff = expansion_coefficients[Species[i]]["LEQ_TG"]
+                     else:
+                            coeff = expansion_coefficients[Species[i]]["GEQ_TG"]
+              else:
+                     coeff = expansion_coefficients[Species[i]]
+              rho = rho_reference[Species[i]] / (1 + coeff*(Temp - rho_reference_temp[Species[i]]))
+              volume[i] = 1 / rho
+       return volume
+
+ def C_i_coeff (self):
+       Species = self.Species
+       C_1 = np.zeros((len(Species)))
+       for i in range(len(Species)):
+              if Species[i] == "PMMA":
+                     C_1[i] = c_i_coeff[Species[i]]*Polymer_length[Species[i]]*Segment_mw[Species[i]]
+              elif Species[i] == "PS":
+                     C_1[i] = c_i_coeff[Species[i]]*Polymer_length[Species[i]]*Segment_mw[Species[i]]
+              elif Species[i] == "PB":
+                     C_1[i] = -0.640 + ((0.6744*0.146*2.0) + (1.1167*0.304))*Polymer_length[Species[i]]
+       return C_1
+
+ def red_volume(self):
+       vol = self.volume()
+       ri  = self.r_i()
+       red_volume = vol/(15.17*1.28*ri)
+       return red_volume
+
+ def red_volume_mix (self):
+       xComp = self.xComp
+       vol = self.volume()
+       ri = self.r_i()
+       Species = self.Species
+       A = np.zeros((len(Species)))
+       wComp = np.zeros((len(Species)))
+       # Calculate weight fractions from mole fractions
+       for i in range(len(Species)):
+              A[i] = xComp[i]*Polymer_length[Species[i]]*Segment_mw[Species[i]]
+       wComp  = A / sum(A)
+       red_vol_mix = (sum(vol*wComp))/(15.17*1.28*sum(ri*wComp))
+       return red_vol_mix
+
+ def ln_gamma_fv(self):
+       red_vol     = self.red_volume()
+       red_vol_mix = self.red_volume_mix()
+       Ci          = self.C_i_coeff()
+       ln_gamma_fv = np.zeros((len(Ci)))
+       for i in range(len(red_vol)):
+              ln_gamma_fv[i] = 3.0*Ci[i]*np.log((red_vol[i]**(1/3)- 1.0)/(red_vol_mix**(1/3) - 1.0)) - Ci[i]*((red_vol[i]/red_vol_mix)-1.0)*((1.0 - (1.0/red_vol[i]**(1/3)))**(-1.0))
+       return ln_gamma_fv
+ # Residual Contribution
+ def ln_gamma_res(self):
+       Species = self.Species
+       lnGammaK = self.lnGammaK()
+       lnGammaKi = self.lnGammaKi()
+       ln_gamma_res = np.zeros((len(Species)))
+       for i in range(len(Species)):
+              for group in list(Polymer_groups[Species[i]].keys()):
+                     ln_gamma_res[i]+=Polymer_groups[Species[i]][group]*(lnGammaK[group]-lnGammaK[group][i])
+ def lnGammaK(self):
+       Temp =self.Temp
+       psi = exp(-a/Temp)
+       for k in list(R_k):
+              for m in list(R_K):
+                     for n in list(R_K):
+                            A+= H[n]*psi[n][m]
+                     B += H[m]*psi[m][k]
+                     C += H[m]*psi[k][m]/A
+              lnGammaK[group] = QK[group]*(1-np.log(B)-C)
+ def Hm(self):
+       for m in list(R_K):
+              A[m] = QK[m]*X[m]
+       H = A/sum(A)
+
+ def Xm(self):
+       for m in list(R_K):
+              for j in range(len(Species)):
+                     A += xComp[j]*Polymer_groups[Species[i]][m]
+              B[m] = A
+       X = B/sum(B)
+ def lnGammaKi(self)
+       Temp = self.Temp
+       Hmi = self.Hmi()
+       
+Polymer_length = {
+    "PMMA": 490,
+    "PS":490,
+    "PB":490
+}
+
+# Molecular weight of each segment: 
+Segment_mw = {
+    "PMMA": 100.1,
+    "PS": 104.1,
+    "PB": 54.1
+}
+
+# C_{i} per unit M_{w} 
+c_i_coeff = {
+    "PMMA": 0.0092,
+    "PS": 0.0066,
+}
+
+# Molar group volumes of all relevant groups
+R_k = {
+    "CH=CH":1.1167,
+    "CH2":0.6744,
+    "C":0.2195,
+    "CH3COO":1.9031,
+    "CH3":0.9011,
+    "ACH":0.5313,
+    "ACCH":0.8121
+}
+
+# Number of each group in the polymer repeating unit
+Polymer_groups = {
+    "PB":{
+        "CH=CH":1,
+        "CH2":2
+    },
+    "PS":{
+        "CH3":1,
+        "CH2":1,
+        "C":1,
+        "CH3COO":1
+    },
+    "PMMA":{
+        "ACH": 5,
+        "ACCH":1,
+        "CH2":1
+    }
+}
+
+# Setting up volume expansion dicts
+# rho_reference has units of g/ cm^3
+rho_reference = {
+    "PMMA":1.190,
+    "PS":1.05,
+    "PB":0.915
+}
+
+#units of Celcius
+rho_reference_temp = {
+    "PMMA":20.0,
+    "PS":20.0,
+    "PB":25.0
+}
+
+# Glass transition temperatures
+T_G = {
+    "PMMA": 105,
+    "PS": 80
+}
+
+# volume thermal expansion coefficients: 
+expansion_coefficients = {
+    "PMMA":{
+        "LEQ_TG":2.60e-4,
+        "GEQ_TG":5.60e-4
+    },
+    "PS":{
+        "LEQ_TG":1.7e-4,
+        "GEQ_TG":5.1e-4
+    },
+    "PB":6.99e-4
+}
