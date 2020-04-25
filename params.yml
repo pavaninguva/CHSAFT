@@ -1,16 +1,16 @@
 #
 # Mole fraction of A
-A_RAW: 0.789
+A_RAW: 0.5
 
 # Thermo model
-# Options for GIBBS are: "FH", "TaylorApproxFullFH", "TaylorApproxLogOnlyFH"
-GIBBS: TaylorApproxLogOnlyFH
+# Options for GIBBS are: "FH", "TaylorApproxFullFH", "TaylorApproxLogOnlyFH", "polynomialfit_fullFH", "symquarticdoublewell_fullFH"
+GIBBS: symquarticdoublewell_fullFH
 
 # Options for SIZE_DISPARITY are: "SMALL", "LARGE"
 SIZE_DISPARITY: SMALL
 
 # Mobility model
-MOBILITY_MODEL: Constant
+MOBILITY_MODEL: Variable
 
 # Materials
 MATERIAL_CHOICE: Validation
@@ -21,7 +21,7 @@ TIME_MAX: 1000000
 DT: 2.0
 N_CELLS: 5
 DOMAIN_LENGTH: 5
-theta_ch: 1
+theta_ch: 0.5
 TIME_STRIDE: 100
 MESH_TYPE: structured
 FINITE_ELEMENT: CG
@@ -52,3 +52,4 @@ DESIRED_RESIDUAL: 0.1
 chi_AB_Validation: 0.0064
 N_A_Validation: 2690
 N_B_Validation: 3500
+## Sym Quartic Polynomial

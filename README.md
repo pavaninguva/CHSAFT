@@ -82,4 +82,4 @@ MATERIAL_CHOICE: PS_PMMA
 ...
 ```
 
-The various thermodynamic models are captured within the binary.py script and can be selected based on selecting an appropriate model ```GIBBS``` in the `params.yml` file. For instance, `FH` corresponds to the Flory-Huggins model. 
+The various thermodynamic models are captured within the binary.py script and can be selected based on selecting an appropriate model ```GIBBS``` in the `params.yml` file. For instance, `FH` corresponds to the Flory-Huggins model.

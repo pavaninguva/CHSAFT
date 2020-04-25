@@ -7,7 +7,7 @@ import csv
 import os
 import time
 import sys
-from FHTaylor import taylorapprox_fullFH, taylorapprox_logonlyFH
+from FHTaylor import taylorapprox_fullFH, taylorapprox_logonlyFH, polynomialfit_fullFH, symquarticdoublewell
 from parameters.params import (
     A_RAW,
     NOISE_MAGNITUDE,
@@ -162,6 +162,12 @@ elif GIBBS == "TaylorApproxFullFH":
 elif GIBBS == "TaylorApproxLogOnlyFH":
     g = taylorapprox_logonlyFH(N_A, N_B, chi_AB, x_a)
     print ("Taylor approx of log term in FH only")
+elif GIBBS == "polynomialfit_fullFH":
+    g = polynomialfit_fullFH(N_A, N_B, chi_AB, x_a, 4)
+    print("Full curve fit ahaha")
+elif GIBBS == "symquarticdoublewell_fullFH":
+    g = symquarticdoublewell(x_a, 0.024762499999341367)
+    print ("BS quartic polynomial")
 else: 
     print ("work harder")
 
