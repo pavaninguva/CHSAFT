@@ -1,5 +1,6 @@
 import numpy as np 
 import pandas as pd 
+import copy
 from math import pi
 import matplotlib.pyplot as plt
 from scipy.optimize import fsolve, least_squares
@@ -372,6 +373,25 @@ class GibbsMixingUNIFAC(object):
        self.Temp = Temp
        self.Species = Species
        # Combinatorial contribution
+ def GibbsFreeMixing(self):
+       ln_gamma      = self.ln_gamma()
+       xComp         = self.xComp
+       Temp          = self.Temp
+       A = 0.
+       for i in range(len(xComp)):
+              A+= xComp[i]*(np.log(xComp[i])+ln_gamma[i])
+       print(ln_gamma)
+       return A*8.314*Temp
+ def ln_gamma(self):
+       Species = self.Species
+       ln_gamma_comb = self.ln_gamma_comb()
+       ln_gamma_fv   = self.ln_gamma_fv()
+       ln_gamma_res  = self.ln_gamma_res()
+       ln_gamma      = np.zeros(len(ln_gamma_comb))
+       for i in range(len(Species)):
+              ln_gamma[i] = ln_gamma_comb[i]+ln_gamma_fv[i]+ln_gamma_res[i]
+       return ln_gamma
+       
  def ln_gamma_comb (self):
        xComp = self.xComp
 
@@ -390,7 +410,7 @@ class GibbsMixingUNIFAC(object):
        phi = xComp*ri**(0.75)/A
        return phi
 
- def r_i (self):
+ def r_i(self):
        Species = self.Species
        r  = np.zeros((len(Species)))
        for i in range(len(Species)):
@@ -455,6 +475,7 @@ class GibbsMixingUNIFAC(object):
        for i in range(len(red_vol)):
               ln_gamma_fv[i] = 3.0*Ci[i]*np.log((red_vol[i]**(1/3)- 1.0)/(red_vol_mix**(1/3) - 1.0)) - Ci[i]*((red_vol[i]/red_vol_mix)-1.0)*((1.0 - (1.0/red_vol[i]**(1/3)))**(-1.0))
        return ln_gamma_fv
+ 
  # Residual Contribution
  def ln_gamma_res(self):
        Species = self.Species
@@ -463,31 +484,99 @@ class GibbsMixingUNIFAC(object):
        ln_gamma_res = np.zeros((len(Species)))
        for i in range(len(Species)):
               for group in list(Polymer_groups[Species[i]].keys()):
-                     ln_gamma_res[i]+=Polymer_groups[Species[i]][group]*(lnGammaK[group]-lnGammaK[group][i])
+                     ln_gamma_res[i]+=Polymer_groups[Species[i]][group]*(lnGammaK[group]-lnGammaKi[Species[i]][group])
+       return ln_gamma_res
  def lnGammaK(self):
        Temp =self.Temp
-       psi = exp(-a/Temp)
+       H = self.Hm()
+       lnGammaK = copy.deepcopy(R_k)
        for k in list(R_k):
-              for m in list(R_K):
-                     for n in list(R_K):
-                            A+= H[n]*psi[n][m]
-                     B += H[m]*psi[m][k]
-                     C += H[m]*psi[k][m]/A
-              lnGammaK[group] = QK[group]*(1-np.log(B)-C)
+              B = 0.
+              C = 0.
+              for m in list(R_k):
+                     A = 0.
+                     for n in list(R_k):
+                            A+= H[n]*np.exp(-a_nm[n][m]/Temp)
+                     B += H[m]*np.exp(-a_nm[m][k]/Temp)
+                     C += H[m]*np.exp(-a_nm[k][m]/Temp)/A
+              lnGammaK[k] = QK[k]*(1-np.log(B)-C)
+       return lnGammaK
  def Hm(self):
-       for m in list(R_K):
+       B = 0.
+       A = copy.deepcopy(R_k)
+       X = self.Xm()
+       for m in list(R_k):
               A[m] = QK[m]*X[m]
-       H = A/sum(A)
+              B   += A[m]
+       H = copy.deepcopy(A)
+       for m in list(A):
+              H[m] = A[m]/B
+       return H
 
  def Xm(self):
-       for m in list(R_K):
+       Species = self.Species
+       xComp   = self.xComp
+       C = 0.
+       B = copy.deepcopy(R_k)
+       for m in list(R_k):
+              A = 0.
               for j in range(len(Species)):
-                     A += xComp[j]*Polymer_groups[Species[i]][m]
+                     if m in list(Polymer_groups[Species[j]].keys()):
+                            A += xComp[j]*Polymer_groups[Species[j]][m]
+                     else:
+                            A += 0
               B[m] = A
-       X = B/sum(B)
- def lnGammaKi(self)
+              C   += A
+       X = copy.deepcopy(B)
+       for m in list(B):
+              X[m] = B[m]/C
+       return X
+
+ def lnGammaKi(self):
        Temp = self.Temp
-       Hmi = self.Hmi()
+       Hi = self.Hmi()
+       Species = self.Species
+       lnGammaKi = copy.deepcopy(Polymer_groups)
+       for i in range(len(Species)):
+              for k in list(Polymer_groups[Species[i]].keys()):
+                     B = 0.
+                     C = 0.
+                     for m in list(Polymer_groups[Species[i]].keys()):
+                            A = 0.
+                            for n in list(Polymer_groups[Species[i]].keys()):
+                                   A+= Hi[Species[i]][n]*np.exp(-a_nm[n][m]/Temp)
+                            B += Hi[Species[i]][m]*np.exp(-a_nm[m][k]/Temp)
+                            C += Hi[Species[i]][m]*np.exp(-a_nm[k][m]/Temp)/A
+                     lnGammaKi[Species[i]][k] = QK[k]*(1-np.log(B)-C)
+       return lnGammaKi
+
+ def Hmi(self):
+       Species = self.Species
+       Xi      = self.Xi()
+       Hi = copy.deepcopy(Polymer_groups)
+       for i in range(len(Species)):
+              A = copy.deepcopy(R_k)
+              B = 0.
+              for m in list(Polymer_groups[Species[i]].keys()):
+                     A[m] = QK[m]*Xi[Species[i]][m]
+                     B    += QK[m]*Xi[Species[i]][m]
+              for m in list(Polymer_groups[Species[i]].keys()):
+                     Hi[Species[i]][m] = A[m]/B
+       return Hi
+
+ def Xi(self):
+       Xi = copy.deepcopy(Polymer_groups)
+       Species = self.Species
+       for i in range(len(Species)):
+              B = 0.
+              A = copy.deepcopy(R_k)
+              for m in list(Polymer_groups[Species[i]].keys()):
+                     A[m]  = Polymer_groups[Species[i]][m]
+                     B    += Polymer_groups[Species[i]][m]
+              for m in list(Polymer_groups[Species[i]].keys()):
+                     Xi[Species[i]][m] = A[m]/B
+       return Xi
+
        
 Polymer_length = {
     "PMMA": 490,
@@ -517,6 +606,70 @@ R_k = {
     "CH3":0.9011,
     "ACH":0.5313,
     "ACCH":0.8121
+}
+
+# A_mn
+a_nm = {
+    "CH=CH":{"CH2": 2520,
+             "CH=CH":0,
+             "C": 2520,
+             "CH3": 2520,
+             "CH3COO": 71.23,
+             "ACH": 340.7,
+             "ACCH": 4102},
+    "CH2":{"CH2": 0,
+             "CH=CH":-200,
+             "C": 0,
+             "CH3": 0,
+             "CH3COO": 232.1,
+             "ACH": 61.13,
+             "ACCH": 76.50},
+    "C":{"CH2": 0,
+             "CH=CH":-200,
+             "C": 0,
+             "CH3": 0,
+             "CH3COO": 232.1,
+             "ACH": 61.13,
+             "ACCH": 76.50},
+    "CH3COO":{"CH2": 114.8,
+             "CH=CH":269.3,
+             "C": 114.8,
+             "CH3": 114.8,
+             "CH3COO": 0,
+             "ACH": 85.84,
+             "ACCH": -170},
+    "CH3":{"CH2": 0,
+             "CH=CH":-200,
+             "C": 0,
+             "CH3": 0,
+             "CH3COO": 232.1,
+             "ACH": 61.13,
+             "ACCH": 76.50},
+    "ACH":{"CH2": -11.12,
+             "CH=CH":-94.78,
+             "C": -11.12,
+             "CH3": -11.12,
+             "CH3COO": 5.994,
+             "ACH": 0,
+             "ACCH": 167.0},
+    "ACCH":{"CH2": -69.7,
+             "CH=CH":-269.7,
+             "C": -69.7,
+             "CH3": -69.7,
+             "CH3COO": 5688,
+             "ACH": -146.8,
+             "ACCH": 0},
+}
+
+# QK
+QK = {
+    "CH=CH":0.867,
+    "CH2":0.540,
+    "C":0.0,
+    "CH3COO":1.728,
+    "CH3":0.9011,
+    "ACH":0.400,
+    "ACCH":0.384
 }
 
 # Number of each group in the polymer repeating unit

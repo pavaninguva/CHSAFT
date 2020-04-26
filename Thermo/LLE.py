@@ -3,7 +3,7 @@ import pandas as pd
 from math import pi
 import matplotlib.pyplot as plt
 from scipy.optimize import fsolve, least_squares
-from Thermo import GibbsMixingPCSAFT,GibbsMixingFH,PCSAFT
+from Thermo import GibbsMixingPCSAFT,GibbsMixingFH,PCSAFT,GibbsMixingUNIFAC
 
 def PressureSolver(xComp,Temp):
     V1 = np.polyval([7.35086529028252e-10,-1.03249580765898e-06,0.000775563883778852,-3.06499793800575],Temp)
@@ -74,7 +74,7 @@ Temp=np.linspace(400,650,20)
 
 kPC=np.zeros(20)
 kFH=np.zeros(20)
-kPCA=np.zeros(20)
+kUN=np.zeros(20)
 
 xLLEFH1=np.zeros(len(Temp))
 xLLEFH2=np.zeros(len(Temp))
@@ -90,35 +90,37 @@ x1=[0.01,0.99]
 x2=[0.01,0.99]
 for j in range(20):
     for i in range(len(xComp1)):
-        rPC=GibbsMixingPCSAFT(nsegment,Mr,epsilon,sigma,NParticles,[Temp[j]],[1e5],[xComp1[i],xComp2[i]],k)
+        # rPC=GibbsMixingPCSAFT(nsegment,Mr,epsilon,sigma,NParticles,[Temp[j]],[1e5],[xComp1[i],xComp2[i]],k)
         rFH=GibbsMixingFH(Temp[j],[xComp1[i],xComp2[i]],[1000,1000],[0.179,0.111],-1.57e-2,18.7,0)
-        kPC[i]=rPC.GibbsFreeMixing()
+        rUN=GibbsMixingUNIFAC(["PMMA","PS"],[xComp1[i],xComp2[i]],Temp[j])
+        # kPC[i]=rPC.GibbsFreeMixing()
         kFH[i]=rFH.GibbsFreeMixing()
-        kPCA[i] =GibbsSolver([xComp1[i],xComp2[i]],[Temp[j]])
+        kUN[i]=rUN.GibbsFreeMixing()/8.314/Temp[j]
     # gMixPC=plt.plot(xComp2,kPC)
     # plt.savefig('gMixPC.png')
     # gMixFH=plt.plot(xComp2,kFH)
     # plt.savefig('gMixFH.png')
-    # gMixPCA=plt.plot(xComp2,kPCA)
-    # plt.savefig('gMixPCA.png')
-    p=np.poly1d(np.polyfit(xComp2,kPC,15))
-    q=np.polyder(p,1)
-
-    n = np.poly1d(np.polyfit(xComp2,kPCA,15))
-    m = np.polyder(n,1)
-
-    x0=fsolve(funFH,x0,args=(-1.57e-2,18.7,0,Temp[j],[1000,1000],[0.179,0.111]))
-    xLLEFH1[j]=x0[0]
-    xLLEFH2[j]=x0[1]
+    gMixUN=plt.plot(xComp2,kUN)
+    plt.savefig('gMixUN.png')
     
-    x1=fsolve(funPCSAFT,x1,args=(p,q))
-    xLLEPC1[j]=x1[0]
-    xLLEPC2[j]=x1[1]
+    # p=np.poly1d(np.polyfit(xComp2,kPC,15))
+    # q=np.polyder(p,1)
+
+    # n = np.poly1d(np.polyfit(xComp2,kPCA,15))
+    # m = np.polyder(n,1)
+
+    # x0=fsolve(funFH,x0,args=(-1.57e-2,18.7,0,Temp[j],[1000,1000],[0.179,0.111]))
+    # xLLEFH1[j]=x0[0]
+    # xLLEFH2[j]=x0[1]
     
-    x2=fsolve(funPCSAFT,x2,args=(n,m))
-    xLLEPCA1[j]=x2[0]
-    xLLEPCA2[j]=x2[1]
+    # x1=fsolve(funPCSAFT,x1,args=(p,q))
+    # xLLEPC1[j]=x1[0]
+    # xLLEPC2[j]=x1[1]
+    
+    # x2=fsolve(funPCSAFT,x2,args=(n,m))
+    # xLLEPCA1[j]=x2[0]
+    # xLLEPCA2[j]=x2[1]
     print(j)
 
-LLE=plt.plot(xLLEFH1*1100/(1670+xLLEFH1*(1100-1670)),Temp,'-',xLLEFH2*1100/(1670+xLLEFH2*(1100-1670)),Temp,'-',xLLEPC1*1100/(1670+xLLEPC1*(1100-1670)),Temp,'--',xLLEPC2*1100/(1670+xLLEPC2*(1100-1670)),Temp,'--',xLLEPCA1*1100/(1670+xLLEPCA1*(1100-1670)),Temp,'--',xLLEPCA2*1100/(1670+xLLEPCA2*(1100-1670)),Temp,'--')
-plt.savefig('LLE.png')
+# LLE=plt.plot(xLLEFH1*1100/(1670+xLLEFH1*(1100-1670)),Temp,'-',xLLEFH2*1100/(1670+xLLEFH2*(1100-1670)),Temp,'-',xLLEPC1*1100/(1670+xLLEPC1*(1100-1670)),Temp,'--',xLLEPC2*1100/(1670+xLLEPC2*(1100-1670)),Temp,'--',xLLEPCA1*1100/(1670+xLLEPCA1*(1100-1670)),Temp,'--',xLLEPCA2*1100/(1670+xLLEPCA2*(1100-1670)),Temp,'--')
+# plt.savefig('LLE.png')
