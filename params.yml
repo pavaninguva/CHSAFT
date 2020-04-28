@@ -3,25 +3,27 @@
 A_RAW: 0.5
 
 # Thermo model
-# Options for GIBBS are: "FH", "TaylorApproxFullFH", "TaylorApproxLogOnlyFH", "polynomialfit_fullFH", "symquarticdoublewell_fullFH"
+# Options for GIBBS are: "FH", "TaylorApproxFullFH", "TaylorApproxLogOnlyFH", 
+# "polynomialfit_fullFH", "symquarticdoublewell_fullFH", "Heatofmixing"
 GIBBS: symquarticdoublewell_fullFH
 
 # Options for SIZE_DISPARITY are: "SMALL", "LARGE"
 SIZE_DISPARITY: SMALL
 
 # Mobility model
-MOBILITY_MODEL: Variable
+MOBILITY_MODEL: Constant
 
 # Materials
-MATERIAL_CHOICE: Validation
+#Options are: "Vashistha94", "PS_PMMA", "PS_PB", "He97"
+MATERIAL_CHOICE: Vashistha94
 
 #Numerics
 NOISE_MAGNITUDE: 0.01
 TIME_MAX: 1000000
 DT: 2.0
-N_CELLS: 5
-DOMAIN_LENGTH: 5
-theta_ch: 0.5
+N_CELLS: 128
+DOMAIN_LENGTH: 128
+theta_ch: 1.0
 TIME_STRIDE: 100
 MESH_TYPE: structured
 FINITE_ELEMENT: CG
@@ -47,9 +49,18 @@ N_B_PS_PB: 7780
 # Sweeping Residual
 DESIRED_RESIDUAL: 0.1
 
-# Validation
+# Vashistha94
 ## FH
-chi_AB_Validation: 0.0064
-N_A_Validation: 2690
-N_B_Validation: 3500
+chi_AB_Vashistha: 0.0075
+N_A_Vashistha: 400
+N_B_Vashistha: 400
 ## Sym Quartic Polynomial
+A_SYM_Vashistha: 0.0013750000000922432
+
+# He97
+## FH
+chi_AB_He: 0.004
+N_A_He: 800
+N_B_He: 1400
+## Sym Quartic Polynomial
+A_SYM_He: 0.00528125000004125

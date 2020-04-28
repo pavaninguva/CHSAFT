@@ -7,7 +7,7 @@ import csv
 import os
 import time
 import sys
-from FHTaylor import taylorapprox_fullFH, taylorapprox_logonlyFH, polynomialfit_fullFH, symquarticdoublewell
+from FHTaylor import taylorapprox_fullFH, taylorapprox_logonlyFH, polynomialfit_fullFH, symquarticdoublewell, heatofmixing
 from parameters.params import (
     A_RAW,
     NOISE_MAGNITUDE,
@@ -26,7 +26,8 @@ from parameters.params import (
     FINITE_ELEMENT_ORDER,
     SOLVER_CONFIG,
     MOBILITY_MODEL,
-    SIZE_DISPARITY
+    SIZE_DISPARITY,
+    A_SYM
 )
 
 
@@ -166,8 +167,10 @@ elif GIBBS == "polynomialfit_fullFH":
     g = polynomialfit_fullFH(N_A, N_B, chi_AB, x_a, 4)
     print("Full curve fit ahaha")
 elif GIBBS == "symquarticdoublewell_fullFH":
-    g = symquarticdoublewell(x_a, 0.024762499999341367)
+    g = symquarticdoublewell(x_a, A_SYM)
     print ("BS quartic polynomial")
+elif GIBBS == "Heatofmixing":
+    g = heatofmixing(chi_AB, x_a)
 else: 
     print ("work harder")
 

@@ -220,6 +220,11 @@ def symquarticdoublewell (x, A):
     g = A * (x**2.0) * (1.0- x)**2.0       
     return g
 
+def heatofmixing (chi, x):
+    g = x *(1.0 - x)* chi
+
+    return g
+
 # def symquarticdoublewell_fullFH (N_1, N_2, chi, x):
 
 #     # Define a linspace between 0.0 - 1.0: 
