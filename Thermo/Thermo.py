@@ -5,6 +5,28 @@ from math import pi
 import matplotlib.pyplot as plt
 from scipy.optimize import fsolve, least_squares
 
+
+class ThermoMix(object):
+ def __init__(self,Method,Species,Length,xComp,Temp=[298],Pre=[1e5]):
+         self.Method = Method
+         self.Species = Species
+         self.Length = Length
+         self.xComp = xComp
+         self.Temp = Temp
+         self.Pre = Pre
+ def GibbsFreeMixing(self):
+       if self.Method == "FH":
+              r = GibbsMixingFH(self.Species,self.xComp,self.Length)
+              gMix = r.GibbsFreeMixing()
+       elif self.Method == "UNIFAC":
+              r = GibbsMixingUNIFAC(self.Species,self.Length,self.xComp,self.Temp)
+              gMix = r.GibbsFreeMixing()
+       elif self.Method == "PCSAFT":
+              r = GibbsMixingPCSAFT(self.Species,self.Length,self.Temp,self.Pre,self.xComp)
+              A = r.GibbsFreeMixing()
+              gMix = A[0]
+       return gMix
+
 class PCSAFT(object):
  def __init__(self, nsegment, Mr, epsilon,sigma,NParticles,Temperature,Volume,xComp,k):
         self.epsilon = np.array(epsilon)
@@ -274,14 +296,30 @@ class PCSAFT(object):
     return Z*NParticles*k_B*Temp/Vol
 
 class  GibbsMixingPCSAFT(object):
- def __init__(self, nsegment, Mr, epsilon,sigma,NParticles,Temperature,Pressure,xComp,k):
+ def __init__(self, Species, Length,Temperature,Pressure,xComp):
+        NSpecies = len(Species)
+        epsilon = []
+        sigma = []
+        nsegment = []
+        Mr = []
+        k = np.zeros((NSpecies,NSpecies))
+        for i in range(len(Species)):
+               epsilon.append(EPSILON[Species[i]])
+               sigma.append(SIGMA[Species[i]])
+               nsegment.append(SEGMENT[Species[i]]*Length[i])
+               Mr.append(Segment_mw[Species[i]]*Length[i])
+               for j in range(len(Species)):
+                      if Species[i]==Species[j]:
+                            k[i,j]=0
+                      else:
+                            k[i,j]=Binary_k[Species[i]][Species[j]]          
         self.epsilon = np.array(epsilon)
         self.sigma = np.array(sigma)
-        self.k=np.array(k)
         self.nsegment = np.array(nsegment)
         self.Mr = np.array(Mr)
+        self.k  = k
         self.xComp=np.array(xComp)
-        self.NParticles=np.array(NParticles)
+        self.NParticles=6.02e23
         self.Temp=np.array(Temperature)
         self.Pre=np.array(Pressure)
  def Pressure(self,Vol,*arg):
@@ -317,62 +355,33 @@ class  GibbsMixingPCSAFT(object):
     r=PCSAFT(nsegment,Mr,epsilon,sigma,NParticles,Temp,pow(10,Vol.x[0]),xComp,k)
     a_res=r.a_res()
     Z_res=r.Z()-1.
-    print(10**Vol1.x[0],10**Vol.x[0])
     
     gMix=(a_res+Z_res)
 
-    return (tideal+gMix-tres)*NParticles*Temp*k_B
+    return tideal+gMix-tres
 
 class GibbsMixingFH(object):
- def __init__(self,Temp,xComp,Nmono,Vmono,A,B,C):
+ def __init__(self,Species,xComp,Length):
         self.xComp=np.array(xComp)
-        self.Nmono=np.array(Nmono)
-        self.Vmono=np.array(Vmono)
-        self.A=np.array(A)
-        self.B=np.array(B)
-        self.C=np.array(C)
-        self.Temp=np.array(Temp)
+        self.Nmono=np.array(Length)
+        self.chi = CHI[Species[0]][Species[1]]
  def GibbsFreeMixing(self):
-       A=self.A
-       B=self.B
-       C=self.C
-       Temp=self.Temp
+       chi = self.chi
        Nmono=self.Nmono
-       Vmono=self.Vmono
        xComp=self.xComp
-       N_A=6.02e23
-       chi=(A+B/Temp+C/Temp**2)
-       vComp=np.zeros(len(xComp))
-       vComp[0]=Nmono[0]*Vmono[0]*xComp[0]/(sum(Nmono*Vmono*xComp))
-       vComp[1]=Nmono[1]*Vmono[1]*xComp[1]/(sum(Nmono*Vmono*xComp))
-       Vol=Nmono*Vmono
-       t1=vComp[0]/Vol[0]*np.log(vComp[0])
-       t2=(1-vComp[0])/Vol[1]*np.log(1-vComp[0])
-       t3=chi*vComp[0]*(1-vComp[0])
-       return t1+t2+t3
-
+       return xComp[0]/Nmono[0]*np.log(xComp[0])+xComp[1]/Nmono[1]*np.log(xComp[1])+chi*xComp[0]*xComp[1]
  def dGibbsFreeMixing(self):
-       A=self.A
-       B=self.B
-       C=self.C
-       Temp=self.Temp
+       chi = self.chi
        Nmono=self.Nmono
-       Vmono=self.Vmono
        xComp=self.xComp
-       N_A=6.02e23
-       chi=(A+B/Temp+C/Temp**2)
-       vComp=np.zeros(len(xComp))
-       vComp[0]=Nmono[0]*Vmono[0]*xComp[0]/(sum(Nmono*Vmono*xComp))
-       vComp[1]=Nmono[1]*Vmono[1]*xComp[1]/(sum(Nmono*Vmono*xComp))
-       Vol=Nmono*Vmono
-       return np.log(vComp[0])/Vol[0]-np.log(1-vComp[0])/Vol[1]-2*chi*vComp[0]+chi-pow(Vol[1],-1)+pow(Vol[0],-1)
+       return np.log(xComp[0])/Nmono[0]-np.log(xComp[1])/Nmono[1]+chi*(1-2*xComp[0])+1/NMono[0]-1/NMono[1]
 
 class GibbsMixingUNIFAC(object):
- def __init__(self,Species,xComp,Temp):
+ def __init__(self,Species,Length,xComp,Temp):
        self.xComp = xComp
-       self.Temp = Temp
+       self.Temp = Temp[0]
        self.Species = Species
-       # Combinatorial contribution
+       self.Length = Length
  def GibbsFreeMixing(self):
        ln_gamma      = self.ln_gamma()
        xComp         = self.xComp
@@ -380,8 +389,7 @@ class GibbsMixingUNIFAC(object):
        A = 0.
        for i in range(len(xComp)):
               A+= xComp[i]*(np.log(xComp[i])+ln_gamma[i])
-       print(ln_gamma)
-       return A*8.314*Temp
+       return A
  def ln_gamma(self):
        Species = self.Species
        ln_gamma_comb = self.ln_gamma_comb()
@@ -391,7 +399,7 @@ class GibbsMixingUNIFAC(object):
        for i in range(len(Species)):
               ln_gamma[i] = ln_gamma_comb[i]+ln_gamma_fv[i]+ln_gamma_res[i]
        return ln_gamma
-       
+# Combinatorial contribution
  def ln_gamma_comb (self):
        xComp = self.xComp
 
@@ -412,10 +420,11 @@ class GibbsMixingUNIFAC(object):
 
  def r_i(self):
        Species = self.Species
+       Length = self.Length
        r  = np.zeros((len(Species)))
        for i in range(len(Species)):
               for group in list(Polymer_groups[Species[i]].keys()):
-                     r[i] += Polymer_groups[Species[i]][group]*R_k[group]*Polymer_length[Species[i]]
+                     r[i] += Polymer_groups[Species[i]][group]*R_k[group]*Length[i]
        return r
 
  # Free volume contribution
@@ -438,13 +447,14 @@ class GibbsMixingUNIFAC(object):
  def C_i_coeff (self):
        Species = self.Species
        C_1 = np.zeros((len(Species)))
+       Length = self.Length
        for i in range(len(Species)):
               if Species[i] == "PMMA":
-                     C_1[i] = c_i_coeff[Species[i]]*Polymer_length[Species[i]]*Segment_mw[Species[i]]
+                     C_1[i] = c_i_coeff[Species[i]]*Length[i]*Segment_mw[Species[i]]
               elif Species[i] == "PS":
-                     C_1[i] = c_i_coeff[Species[i]]*Polymer_length[Species[i]]*Segment_mw[Species[i]]
+                     C_1[i] = c_i_coeff[Species[i]]*Length[i]*Segment_mw[Species[i]]
               elif Species[i] == "PB":
-                     C_1[i] = -0.640 + ((0.6744*0.146*2.0) + (1.1167*0.304))*Polymer_length[Species[i]]
+                     C_1[i] = -0.640 + ((0.6744*0.146*2.0) + (1.1167*0.304))*Length[i]
        return C_1
 
  def red_volume(self):
@@ -458,11 +468,12 @@ class GibbsMixingUNIFAC(object):
        vol = self.volume()
        ri = self.r_i()
        Species = self.Species
+       Length = self.Length
        A = np.zeros((len(Species)))
        wComp = np.zeros((len(Species)))
        # Calculate weight fractions from mole fractions
        for i in range(len(Species)):
-              A[i] = xComp[i]*Polymer_length[Species[i]]*Segment_mw[Species[i]]
+              A[i] = xComp[i]*Length[i]*Segment_mw[Species[i]]
        wComp  = A / sum(A)
        red_vol_mix = (sum(vol*wComp))/(15.17*1.28*sum(ri*wComp))
        return red_vol_mix
@@ -482,9 +493,10 @@ class GibbsMixingUNIFAC(object):
        lnGammaK = self.lnGammaK()
        lnGammaKi = self.lnGammaKi()
        ln_gamma_res = np.zeros((len(Species)))
+       Length = self.Length
        for i in range(len(Species)):
               for group in list(Polymer_groups[Species[i]].keys()):
-                     ln_gamma_res[i]+=Polymer_groups[Species[i]][group]*(lnGammaK[group]-lnGammaKi[Species[i]][group])
+                     ln_gamma_res[i]+=Length[i]*Polymer_groups[Species[i]][group]*(lnGammaK[group]-lnGammaKi[Species[i]][group])
        return ln_gamma_res
  def lnGammaK(self):
        Temp =self.Temp
@@ -516,13 +528,14 @@ class GibbsMixingUNIFAC(object):
  def Xm(self):
        Species = self.Species
        xComp   = self.xComp
+       Length = self.Length
        C = 0.
        B = copy.deepcopy(R_k)
        for m in list(R_k):
               A = 0.
               for j in range(len(Species)):
                      if m in list(Polymer_groups[Species[j]].keys()):
-                            A += xComp[j]*Polymer_groups[Species[j]][m]
+                            A += xComp[j]*Polymer_groups[Species[j]][m]*Length[j]
                      else:
                             A += 0
               B[m] = A
@@ -567,28 +580,34 @@ class GibbsMixingUNIFAC(object):
  def Xi(self):
        Xi = copy.deepcopy(Polymer_groups)
        Species = self.Species
+       Length = self.Length
        for i in range(len(Species)):
               B = 0.
               A = copy.deepcopy(R_k)
               for m in list(Polymer_groups[Species[i]].keys()):
-                     A[m]  = Polymer_groups[Species[i]][m]
-                     B    += Polymer_groups[Species[i]][m]
+                     A[m]  = Length[i]*Polymer_groups[Species[i]][m]
+                     B    += Length[i]*Polymer_groups[Species[i]][m]
               for m in list(Polymer_groups[Species[i]].keys()):
                      Xi[Species[i]][m] = A[m]/B
        return Xi
 
        
 Polymer_length = {
-    "PMMA": 490,
-    "PS":490,
-    "PB":490
+    "PMMA": 930,
+    "PS":961,
+    "PB":490,
+    "EtOH": 1,
+    "Benzene": 1
 }
 
 # Molecular weight of each segment: 
 Segment_mw = {
-    "PMMA": 100.1,
+    "PMMA": 86,
+#     "PMA": 100,
     "PS": 104.1,
-    "PB": 54.1
+    "PB": 54.1,
+    "EtOH": 46.07,
+    "Benzene": 78.11
 }
 
 # C_{i} per unit M_{w} 
@@ -605,7 +624,8 @@ R_k = {
     "CH3COO":1.9031,
     "CH3":0.9011,
     "ACH":0.5313,
-    "ACCH":0.8121
+    "ACCH":0.8121,
+    "OH": 1.0
 }
 
 # A_mn
@@ -616,49 +636,64 @@ a_nm = {
              "CH3": 2520,
              "CH3COO": 71.23,
              "ACH": 340.7,
-             "ACCH": 4102},
+             "ACCH": 4102,
+             "OH": 636.1},
     "CH2":{"CH2": 0,
              "CH=CH":-200,
              "C": 0,
              "CH3": 0,
              "CH3COO": 232.1,
              "ACH": 61.13,
-             "ACCH": 76.50},
+             "ACCH": 76.50,
+             "OH":986.5},
     "C":{"CH2": 0,
              "CH=CH":-200,
              "C": 0,
              "CH3": 0,
              "CH3COO": 232.1,
              "ACH": 61.13,
-             "ACCH": 76.50},
+             "ACCH": 76.50,
+             "OH": 636.1},
     "CH3COO":{"CH2": 114.8,
              "CH=CH":269.3,
              "C": 114.8,
              "CH3": 114.8,
              "CH3COO": 0,
              "ACH": 85.84,
-             "ACCH": -170},
+             "ACCH": -170,
+             "OH": 636.1},
     "CH3":{"CH2": 0,
              "CH=CH":-200,
              "C": 0,
              "CH3": 0,
              "CH3COO": 232.1,
              "ACH": 61.13,
-             "ACCH": 76.50},
+             "ACCH": 76.50,
+             "OH":986.5},
     "ACH":{"CH2": -11.12,
              "CH=CH":-94.78,
              "C": -11.12,
              "CH3": -11.12,
              "CH3COO": 5.994,
              "ACH": 0,
-             "ACCH": 167.0},
+             "ACCH": 167.0,
+             "OH": 636.1},
     "ACCH":{"CH2": -69.7,
              "CH=CH":-269.7,
              "C": -69.7,
              "CH3": -69.7,
              "CH3COO": 5688,
              "ACH": -146.8,
-             "ACCH": 0},
+             "ACCH": 0,
+             "OH": 636.1},
+    "OH":{"CH2": 156.4,
+             "CH=CH":0,
+             "C": 156.4,
+             "CH3": 156.4,
+             "CH3COO": 0,
+             "ACH": 89.6,
+             "ACCH": 0,
+             "OH": 0},
 }
 
 # QK
@@ -667,9 +702,10 @@ QK = {
     "CH2":0.540,
     "C":0.0,
     "CH3COO":1.728,
-    "CH3":0.9011,
+    "CH3":0.848,
     "ACH":0.400,
-    "ACCH":0.384
+    "ACCH":0.384,
+    "OH": 1.2
 }
 
 # Number of each group in the polymer repeating unit
@@ -678,17 +714,25 @@ Polymer_groups = {
         "CH=CH":1,
         "CH2":2
     },
-    "PS":{
+    "PMMA":{
         "CH3":1,
         "CH2":1,
         "C":1,
         "CH3COO":1
     },
-    "PMMA":{
+    "PS":{
         "ACH": 5,
         "ACCH":1,
         "CH2":1
-    }
+    },
+    "EtOH":{
+        "OH": 1,
+        "CH3": 1,
+        "CH2": 1
+    },
+    "Benzene":{
+        "ACH": 6,
+    },
 }
 
 # Setting up volume expansion dicts
@@ -723,4 +767,32 @@ expansion_coefficients = {
         "GEQ_TG":5.1e-4
     },
     "PB":6.99e-4
+}
+
+EPSILON = { 
+       "PMMA": 264.6,
+       "PS": 348.2,
+       "PB": 288.84
+}
+
+SIGMA = { 
+       "PMMA": 3.553e-10,
+       "PS": 4.152e-10,
+       "PB": 4.097e-10
+}
+
+SEGMENT = { 
+       "PMMA": 0.0270*100,
+       "PS": 0.0205*104.1,
+       "PB": 0.0245*54.1
+}
+
+Binary_k = {
+"PMMA": {"PS":0.00497},
+"PS": {"PMMA":0.00497}
+}
+
+CHI = {
+       "PMMA": {"PS": 0.25},
+       "PS": {"PMMA": 0.25}
 }
