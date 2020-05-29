@@ -7,7 +7,7 @@ from Thermo import ThermoMix
 
 # r=PCSAFT([26.95,34.235],[1100,1670],[288.84, 348.2],[4.097e-10,4.152e-10],[6.02214086e23],[298],[1e-4],[0.5,0.5],[[0.,0.00497],[0.00497,0.]])
 r=ThermoMix("PCSAFT",["PS","PMMA"],[1100/104.1,1670/100],[0.5,0.5],[298],[1e5])
-print(r.GibbsFreeMixing())
+print(r.dGibbsFreeMixing())
 # r = GibbsMixingUNIFAC(["PMMA","PS"],[0.5,0.5],298)
 # print('ln gamma: =======')
 # print('{:18s}'.format('value: '), r.ln_gamma_comb()+r.ln_gamma_res())
