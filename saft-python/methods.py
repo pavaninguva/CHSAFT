@@ -45,11 +45,9 @@ def hsdiam(T_s, rep, att=6, x_inf=0):
     # Loop to cater to Var 
     xsum = 0.
     for i in range(len(x1i)):
-        xsum = xsum + wgl[i] * ((x1i[i]**2 * exp(-mie_s(x1i[i], rep, att) / T_s)) + (x2i[i]**2 * exp(-mie_s(x2i[i], rep, att) / T_s)))
+        xsum = xsum + wgl[i] * (exp(-mie_s(x1i[i], rep, att) / T_s) + exp(-mie_s(x2i[i], rep, att) / T_s))
 
-    dcube_s = 1 - (3 * (1-x_inf) / 2 * xsum)
-    dhs_s = pow(dcube_s, 1/3)
-
+    dhs_s = 1 - ( (1-x_inf) / 2 * xsum)
     # r_s = np.flip(np.linspace(1.,0.,100, endpoint=False))
     # uu = mie_s(r_s,rep,att)
     # expu = np.exp(-uu/T_s)
