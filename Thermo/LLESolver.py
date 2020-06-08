@@ -32,12 +32,12 @@ class vonSolmsLLE(object):
  def Equilibrium(self,x,*arg):
      Method,Species,Length,Temp,Pre,xSpn = arg
      r0 = ThermoMix(Method,Species,Length,[xSpn,1-xSpn],[Temp],[Pre])
-     g0 = r0.GibbsFreeMixing()
+     g0 = r0.g_res()
 
      r  = ThermoMix(Method,Species,Length,[x[0],1-x[0]],[Temp],[Pre])
-     g  = r.GibbsFreeMixing()
-     dg  = r.dGibbsFreeMixing()
-     return (g-g0)/(x[0]-xSpn)-dg
+     g  = r.g_res()
+    #  dg  = r.dGibbsFreeMixing()
+     return (g[0]-g0[0])/(x[0]-xSpn)-g[1]
  def LLE(self,Temp=298,Pre=1e5):
      Method = self.Method
      Species = self.Species
@@ -45,23 +45,27 @@ class vonSolmsLLE(object):
      
      # Finding Spinodal points first
      bnds = ((0,1),)
-     xSpn1 = minimize(self.Spinodal,(0.5),method='SLSQP',bounds=bnds,args=(Method,Species,Length,Temp,Pre,-1.))
-     xSpn2 = minimize(self.Spinodal,(0.5),method='SLSQP',bounds=bnds,args=(Method,Species,Length,Temp,Pre,1.))
+     try:
+        xSpn1 = minimize(self.Spinodal,(0.5),method='SLSQP',bounds=bnds,args=(Method,Species,Length,Temp,Pre,-1.))
+        xSpn2 = minimize(self.Spinodal,(0.5),method='SLSQP',bounds=bnds,args=(Method,Species,Length,Temp,Pre,1.))
 
-     x1 = [xSpn1.x[0],xSpn1.x[0]]
-     x2 = [xSpn2.x[0],1.]
-     i=0.
-     while (abs(x2[0]-x2[1])>1e-6 or abs(x1[0]-x1[1])>1e-6) and i<100:
-         if (i % 2)==0:
-             x2[0] = x2[1]
-             x = least_squares(self.Equilibrium,(x2[0]+1)/2,bounds=(xSpn2.x[0],1),args=(Method,Species,Length,Temp,Pre,x1[1]))
-             x2[1] = x.x[0]
-         else:
-             x1[0] = x1[1]
-             x = least_squares(self.Equilibrium,(x1[0])/2,bounds=(0,xSpn1.x[0]),args=(Method,Species,Length,Temp,Pre,x2[1]))
-             x1[1] = x.x[0]
-         i+=1.
-     return [x1[1],x2[1]]
+        x1 = [xSpn1.x[0],xSpn1.x[0]]
+        x2 = [xSpn2.x[0],1.]
+        i=0.
+        while (abs(x2[0]-x2[1])>1e-6 or abs(x1[0]-x1[1])>1e-6) and i<100:
+            if (i % 2)==0:
+                x2[0] = x2[1]
+                x = least_squares(self.Equilibrium,(x2[0]+1)/2,bounds=(xSpn2.x[0],1),args=(Method,Species,Length,Temp,Pre,x1[1]))
+                x2[1] = x.x[0]
+            else:
+                x1[0] = x1[1]
+                x = least_squares(self.Equilibrium,(x1[0])/2,bounds=(0,xSpn1.x[0]),args=(Method,Species,Length,Temp,Pre,x2[1]))
+                x1[1] = x.x[0]
+            i+=1.
+        A = [x1[1],x2[1]]
+     except:
+        A = [0.5,0.5]
+     return A
      
 # Temp = 350
 # Pre = 1e5

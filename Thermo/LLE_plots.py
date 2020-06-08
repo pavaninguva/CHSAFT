@@ -7,7 +7,7 @@ Species = ["PB","PS"]
 Method = "PCSAFT"
 Solver = "vonSolms"
 
-Temp = np.linspace(290,335,10)
+Temp = np.linspace(290,550,100)
 r = LLESolvers(Solver,Method,Species,Length)
 
 x1 = []

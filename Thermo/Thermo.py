@@ -76,13 +76,13 @@ class PCSAFT(object):
         m_mean=self.m_mean()
         
         # PC-SAFT
-        for i in range(len(xComp)):
-            B=xComp[i]*(nsegment[i]-1)*np.log(g_hs[i])
-            result=result+B
-        A=m_mean*a_hs-result
+       #  for i in range(len(xComp)):
+       #      B=xComp[i]*(nsegment[i]-1)*np.log(g_hs[i])
+       #      result=result+B
+       #  A=m_mean*a_hs-result
         
         # sPC-SAFT
-       #  A=m_mean*a_hs-(m_mean-1)*np.log(g_hs)
+        A=m_mean*a_hs-(m_mean-1)*np.log(g_hs)
         return A
 
  def m_mean(self):
@@ -101,10 +101,10 @@ class PCSAFT(object):
         zeta3=self.zetan(3)
         
         # PC-SAFT
-        A=1/zeta0*((3*zeta1*zeta2)/(1-zeta3)+pow(zeta2,3)/(zeta3*pow((1-zeta3),2))+(pow(zeta2,3)/pow(zeta3,2)-zeta0)*np.log(1-zeta3))
+       #  A=1/zeta0*((3*zeta1*zeta2)/(1-zeta3)+pow(zeta2,3)/(zeta3*pow((1-zeta3),2))+(pow(zeta2,3)/pow(zeta3,2)-zeta0)*np.log(1-zeta3))
         
         # sPC-SAFT
-       #  A=(4*zeta3-3*pow(zeta3,2))/pow(1-zeta3,2)
+        A=(4*zeta3-3*pow(zeta3,2))/pow(1-zeta3,2)
         return A
 
  def g_hs(self):
@@ -113,12 +113,12 @@ class PCSAFT(object):
         HSd=self.HSd()
         
         # PC-SAFT
-        A=HSd
-        for i in range(len(HSd)):
-            A[i]=1/(1-zeta3)+pow(HSd[i],2)*3*zeta2/(2*HSd[i]*pow((1-zeta3),2))+pow(HSd[i],4)*2*pow(zeta2,2)/((pow(2*HSd[i],2))*pow((1-zeta3),3))
+       #  A=HSd
+       #  for i in range(len(HSd)):
+       #      A[i]=1/(1-zeta3)+pow(HSd[i],2)*3*zeta2/(2*HSd[i]*pow((1-zeta3),2))+pow(HSd[i],4)*2*pow(zeta2,2)/((pow(2*HSd[i],2))*pow((1-zeta3),3))
         
         # sPC-SAFT
-       #  A=(1-zeta3/2)/pow(1-zeta3,3)    
+        A=(1-zeta3/2)/pow(1-zeta3,3)    
         return A
 
  def zetan(self,m):
@@ -227,13 +227,13 @@ class PCSAFT(object):
     t1=m_mean*Z_HS
 
     # PC-SAFT
-    t2=0.
-    for i in range(len(xComp)):
-        t2=xComp[i]*(nsegment[i]-1)*pow(g_hs[i],-1)*dg_hs[i]+t2
-    A = t1-t2
+#     t2=0.
+#     for i in range(len(xComp)):
+#         t2=xComp[i]*(nsegment[i]-1)*pow(g_hs[i],-1)*dg_hs[i]+t2
+#     A = t1-t2
     
     # sPC-SAFT
-#     A = t1+(1-m_mean)*pow(g_hs,-1)*dg_hs
+    A = t1+(1-m_mean)*pow(g_hs,-1)*dg_hs
     return A
 
  def Z_HS(self):
@@ -243,10 +243,10 @@ class PCSAFT(object):
     zeta3=self.zetan(3)
     
     # sPC-SAFT
-#     A=2*zeta3*(2-zeta3)/pow(1-zeta3,3)
+    A=2*zeta3*(2-zeta3)/pow(1-zeta3,3)
     
     # PC-SAFT
-    A=zeta3/(1-zeta3)+3*zeta1*zeta2/(zeta0*pow((1-zeta3),2))+(3*pow(zeta2,3)-zeta3*pow(zeta2,3))/(zeta0*pow((1-zeta3),3))
+#     A=zeta3/(1-zeta3)+3*zeta1*zeta2/(zeta0*pow((1-zeta3),2))+(3*pow(zeta2,3)-zeta3*pow(zeta2,3))/(zeta0*pow((1-zeta3),3))
     return A
 
  def dg_hs(self):
@@ -255,12 +255,12 @@ class PCSAFT(object):
     HSd=self.HSd()
     
     # PC-SAFT
-    A=HSd*0.
-    for i in range(len(HSd)):
-        A[i]=zeta3/pow((1-zeta3),2)+HSd[i]/2*(3*zeta2/pow((1-zeta3),2)+6*zeta2*zeta3/pow((1-zeta3),3))+pow(HSd[i]/2,2)*(4*pow(zeta2,2)/pow((1-zeta3),3)+6*pow(zeta2,2)*zeta3/pow((1-zeta3),4))
+#     A=HSd*0.
+#     for i in range(len(HSd)):
+#         A[i]=zeta3/pow((1-zeta3),2)+HSd[i]/2*(3*zeta2/pow((1-zeta3),2)+6*zeta2*zeta3/pow((1-zeta3),3))+pow(HSd[i]/2,2)*(4*pow(zeta2,2)/pow((1-zeta3),3)+6*pow(zeta2,2)*zeta3/pow((1-zeta3),4))
     
     # sPC-SAFT
-#     A=zeta3*(5-2*zeta3)/(2*pow(1-zeta3,4))
+    A=zeta3*(5-2*zeta3)/(2*pow(1-zeta3,4))
     return A 
  def Z_Disp(self):
     m2eo3=self.m2eno3(1)
@@ -334,7 +334,13 @@ class PCSAFT(object):
      a_hs     = self.a_hs()
      da_hs_dx = self.da_hs_dx()
      dg_hs_dx = self.dg_hs_dx()
-     return nsegment*a_hs-(nsegment-1.)*np.log(g_hs)+m_mean*da_hs_dx-np.sum(xComp*(nsegment-1.)*pow(g_hs,-1)*dg_hs_dx,axis=1)
+     
+     # PC-SAFT
+#      A = nsegment*a_hs-(nsegment-1.)*np.log(g_hs)+m_mean*da_hs_dx-np.sum(xComp*(nsegment-1.)*pow(g_hs,-1)*dg_hs_dx,axis=1)
+     
+     # sPC-SAFT
+     A = nsegment*a_hs-(nsegment-1.)*np.log(g_hs)+m_mean*da_hs_dx-(m_mean-1)*pow(g_hs,-1)*dg_hs_dx
+     return A
  
  def da_hs_dx(self):
      zeta0_dx = self.zetan_dx(0)
@@ -348,6 +354,7 @@ class PCSAFT(object):
      zeta3=self.zetan(3)
 
      a_hs = self.a_hs()
+     Z_HS = self.Z_HS()
 
      t1 = -zeta0_dx/zeta0*a_hs
      
@@ -360,7 +367,13 @@ class PCSAFT(object):
      t252 = np.log(1-zeta3)
      t26 = (zeta0-pow(zeta2,3)*pow(zeta3,-2))*zeta3_dx/(1-zeta3)
 
-     return t1+t20*(t21+t22+t23+t24+t251*t252+t26)
+     # PC-SAFT
+#      A = t1+t20*(t21+t22+t23+t24+t251*t252+t26)
+
+     # sPC-SAFT
+     A = Z_HS/zeta3*zeta3_dx
+
+     return A
 
  def dg_hs_dx(self):
      zeta0_dx = self.zetan_dx(0)
@@ -373,14 +386,20 @@ class PCSAFT(object):
      zeta2=self.zetan(2)
      zeta3=self.zetan(3)
 
-     HSd=self.HSd()
-     NComp = len(HSd)
-     dg_hs_dx = np.zeros((NComp,NComp))
-     for i in range(len(HSd)):
-            t1 = zeta3_dx*pow(1-zeta3,-2)
-            t2 = HSd[i]/2*(3*zeta2_dx*pow(1-zeta3,-2)+6*zeta2*zeta3_dx*pow(1-zeta3,-3))
-            t3 = pow(HSd[i]/2,2)*(4*zeta2*zeta2_dx*pow(1-zeta3,-3)+6*pow(zeta2,2)*zeta3_dx*pow(1-zeta3,-4))
-            dg_hs_dx[:,i] = t1+t2+t3
+     dg_eta = self.dg_hs()
+
+     # PC-SAFT  
+#      HSd=self.HSd()
+#      NComp = len(HSd)
+#      dg_hs_dx = np.zeros((NComp,NComp))
+#      for i in range(NComp):
+#             t1 = zeta3_dx*pow(1-zeta3,-2)
+#             t2 = HSd[i]/2*(3*zeta2_dx*pow(1-zeta3,-2)+6*zeta2*zeta3_dx*pow(1-zeta3,-3))
+#             t3 = pow(HSd[i]/2,2)*(4*zeta2*zeta2_dx*pow(1-zeta3,-3)+6*pow(zeta2,2)*zeta3_dx*pow(1-zeta3,-4))
+#             dg_hs_dx[:,i] = t1+t2+t3
+
+     # sPC-SAFT
+     dg_hs_dx =  dg_eta*zeta3_dx/zeta3
      return dg_hs_dx
  
  def da_disp_dx(self):
@@ -538,14 +557,14 @@ class  GibbsMixingPCSAFT(object):
         r=PCSAFT([nsegment[i]],[Mr[i]],[epsilon[i]],[sigma[i]],NParticles,Temp,pow(10,Vol1.x[0]),[1.],[[0.]])
         Z_res=r.Z()-1.
         a_res=r.a_res()
-        tres=(a_res+Z_res)*xComp[i]+tres
+        tres=(a_res+Z_res+np.log(Z_res+1))*xComp[i]+tres
     Vol=least_squares(self.Pressure,np.log10(sum(NParticles*xComp*nsegment*pow(sigma,3)*pow(1-0.12*np.exp(-3*epsilon/(Temp)),3)))*1.05,bounds=(np.log10(sum(NParticles*xComp*nsegment*pow(sigma,3)*pow(1-0.12*np.exp(-3*epsilon/(Temp)),3)))*1.3,np.log10(sum(NParticles*xComp*nsegment*pow(sigma,3)*pow(1-0.12*np.exp(-3*epsilon/(Temp)),3)))*0.6),args=(Pre,nsegment,Mr,epsilon,sigma,NParticles,Temp,xComp,k))
     # Vol=least_squares(self.Pressure,-2.7,bounds=(-3.2,-2.5),args=(Pre,nsegment,Mr,epsilon,sigma,NParticles,Temp,xComp,k))
     r=PCSAFT(nsegment,Mr,epsilon,sigma,NParticles,Temp,pow(10,Vol.x[0]),xComp,k)
-    mu_res=r.mu_res()
+    g_res=r.a_res()+r.Z()-1+np.log(r.Z())
     
 
-    return sum(xComp*mu_res)-tres+tideal
+    return g_res-tres+tideal
 
 
  def dGibbsFreeMixing(self):
@@ -596,7 +615,7 @@ class  GibbsMixingPCSAFT(object):
     
      r_mix=PCSAFT(nsegment,Mr,epsilon,sigma,NParticles,Temp,pow(10,VolMix.x[0]),xComp,k)
      mu_mix = r_mix.mu_res()
-     g_mix  = r_mix.a_res()+r_mix.Z()-1
+     g_mix  = r_mix.a_res()+r_mix.Z()-1+np.log(r_mix.Z())
      dg_res = np.log(xComp[0])-np.log(xComp[1])+(mu_mix[0]-mu_mix[1])
      g_res  =sum(xComp*(np.log(xComp)+g_mix))
      return [g_res,dg_res]
@@ -1029,8 +1048,8 @@ SEGMENT = {
 }
 
 Binary_k = {
-"PB": {"PS":0.00139},
-"PS": {"PB":0.00139}
+"PB": {"PS":0.00539},
+"PS": {"PB":0.00539}
 }
 
 CHI = {
