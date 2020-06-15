@@ -2,18 +2,22 @@ import numpy as np
 import matplotlib.pyplot as plt
 from LLESolver import LLESolvers
 
-Length = [1100/54.1,1340/104.1]
+Length = [2585/54.1,1672/104.1]
 Species = ["PB","PS"]
 Method = "PCSAFT"
-Solver = "vonSolms"
+Solver = "GTP"
 
-Temp = np.linspace(290,550,100)
+Temp = np.linspace(270,370,50)
 r = LLESolvers(Solver,Method,Species,Length)
 
 x1 = []
 x2 = []
 for i in range(len(Temp)):
-    X=r.LLE(Temp[i])
+    if i==0:
+        X=r.LLE(Temp[i])
+    else:
+        X=r.LLE(Temp[i],1e5,[x1[i-1],x2[i-1]])
+        # X = r.LLE(Temp[i])
     x1.append(X[0])
     x2.append(X[1])
     print(i)

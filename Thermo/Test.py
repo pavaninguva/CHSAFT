@@ -1,24 +1,43 @@
+import timeit
+
 import numpy as np 
 import pandas as pd 
 from math import pi
 import matplotlib.pyplot as plt
 from scipy.optimize import fsolve, least_squares
 from Thermo import ThermoMix,PCSAFT
+code = """
 from LLESolver import LLESolvers
+Temp = 275
+Pre = 1e5
+Length = [1100/54.1,1340/104.1]
+Species = ["PB","PS"]
+Method = "PCSAFT"
+Solver = "GTP"
 
-# Temp = 350
-# Pre = 1e5
-# Length = [1100/54.1,1670/104.1]
-# Species = ["PB","PS"]
-# Method = "PCSAFT"
-# Solver = "vonSolms"
+r=LLESolvers(Solver,Method,Species,Length)
+print(r.LLE(Temp,Pre))
+"""
+print(timeit.timeit(code, number=10)/10)
+code = """
+from LLESolver import LLESolvers
+Temp = 275
+Pre = 1e5
+Length = [1100/54.1,1340/104.1]
+Species = ["PB","PS"]
+Method = "PCSAFT"
+Solver = "vonSolms"
 
-# r=LLESolvers(Solver,Method,Species,Length)
-# print(r.LLE(Temp,Pre))
+r=LLESolvers(Solver,Method,Species,Length)
+r.LLE(Temp,Pre)
+"""
+print(timeit.timeit(code, number=10)/10)
+# r=LLESolvers("vonSolms",Method,Species,Length)
+# print(r.LLE(Temp,Pre),t1-t0)
 
-r=PCSAFT([26.95,34.235],[1100,1670],[288.84, 348.2],[4.097e-10,4.152e-10],[6.02214086e23],[298],[1e-3],[0.5,0.5],[[0.,0.00497],[0.00497,0.]])
+# r=PCSAFT([26.95,34.235],[1100,1670],[288.84, 348.2],[4.097e-10,4.152e-10],[6.02214086e23],[298],[1e-3],[0.5,0.5],[[0.,0.00497],[0.00497,0.]])
 # r=ThermoMix("PCSAFT",["PS","PMMA"],[1100/104.1,1670/100],[0.5,0.5],[298],[1e5])
-print(r.mu_res())
+# print(r.mu_res())
 # r = GibbsMixingUNIFAC(["PMMA","PS"],[0.5,0.5],298)
 # print('ln gamma: =======')
 # print('{:18s}'.format('value: '), r.ln_gamma_comb()+r.ln_gamma_res())
