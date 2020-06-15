@@ -23,6 +23,7 @@ for i in range(len(xComp)):
     gMix_SAFT.append(SAFT.GibbsFreeMixing())
     # gMix_UNIFAC.append(SAFT.dGibbsFreeMixing())
 r = LLESolvers("GTP","PCSAFT",Species,Length)
+r = LLESolvers("Crude","PCSAFT",Species,Length)
 X = r.LLE(Temp)
 gSpn = []
 for i in range(len(X)):

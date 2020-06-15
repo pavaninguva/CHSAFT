@@ -1,5 +1,5 @@
 from Thermo import ThermoMix
-from scipy.optimize import minimize,least_squares,root
+from scipy.optimize import minimize,least_squares,root,fsolve
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -13,8 +13,11 @@ class LLESolvers(object):
      if self.Solver=="vonSolms":
          r = vonSolmsLLE(self.Method,self.Species,self.Length)
          x = r.LLE(Temp=Temp,Pre=Pre)
-     else:
+     if self.Solver=="GTP":
          r = TangentPlaneSolver(self.Method,self.Species,self.Length)
+         x = r.LLE(Temp=Temp,Pre=Pre,x0=x0)
+     if self.Solver=="Crude":
+         r = CrudeSolver(self.Method,self.Species,self.Length)
          x = r.LLE(Temp=Temp,Pre=Pre,x0=x0)
      return x
 
@@ -163,4 +166,31 @@ class TangentPlaneSolver(object):
 # plt.plot([x1,x2],[fBi1,fBi2],color='k', ls='solid')  
 # # print(Equilibrium(0.5,Method,Species,Length,Temp,Pre,xSpn.x))
 # plt.savefig('gMix.png')
+
+class CrudeSolver(object):
+ def __init__(self,Method,Species,Length):
+    self.Method = Method
+    self.Species = Species
+    self.Length = Length
+
+ def equations(self,x,*arg):
+    Method,Species,Length,Temp,Pre = arg
+    Mr = [Length[0]*54.1,Length[1]*104.1]
+
+    r1  = ThermoMix(Method,Species,Length,[x[0]/Mr[0]/(x[0]*(1/Mr[0]-1/Mr[1])+1/Mr[1]),1-x[0]/Mr[0]/(x[0]*(1/Mr[0]-1/Mr[1])+1/Mr[1])],[Temp],[Pre])
+    g1  = r1.GibbsFreeMixing()
+    mu1 = r1.dGibbsFreeMixing()
+
+    r2  = ThermoMix(Method,Species,Length,[x[1]/Mr[0]/(x[1]*(1/Mr[0]-1/Mr[1])+1/Mr[1]),1-x[1]/Mr[0]/(x[1]*(1/Mr[0]-1/Mr[1])+1/Mr[1])],[Temp],[Pre])
+    g2  = r2.GibbsFreeMixing()
+    # print(x[0], x[1])
+    mu2 = r2.dGibbsFreeMixing()
+    return (g2-g1-(x[1]-x[0])*mu1, mu2-mu1)
+
+ def LLE(self,Temp=298,Pre=1e5,x0=None):
+    Method = self.Method
+    Species = self.Species
+    Length = self.Length
+    return fsolve(self.equations,[0.05,0.95],args=(Method,Species,Length,Temp,Pre))
+    # return least_squares(self.equations,[0.05,0.95],bounds=((0,0),(1,1)),args=(Method,Species,Length,Temp,Pre)).x
 
