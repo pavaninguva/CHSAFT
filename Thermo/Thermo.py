@@ -1,4 +1,5 @@
-import numpy as np 
+import autograd.numpy as np 
+from autograd import grad
 import pandas as pd 
 import copy
 from math import pi
@@ -19,8 +20,8 @@ class ThermoMix(object):
               r = GibbsMixingFH(self.Species,self.xComp,self.Length)
               gMix = r.GibbsFreeMixing()
        elif self.Method == "UNIFAC":
-              r = GibbsMixingUNIFAC(self.Species,self.Length,self.xComp,self.Temp)
-              gMix = r.GibbsFreeMixing()
+              r = GibbsMixingUNIFAC(self.Species,self.Length,self.Temp)
+              gMix = r.GibbsFreeMixing(self.xComp[0])[0]
        elif self.Method == "PCSAFT":
               r = GibbsMixingPCSAFT(self.Species,self.Length,self.Temp,self.Pre,self.xComp)
               A = r.GibbsFreeMixing()
@@ -31,8 +32,8 @@ class ThermoMix(object):
               r = GibbsMixingFH(self.Species,self.xComp,self.Length)
               dgMix = r.dGibbsFreeMixing()
        elif self.Method == "UNIFAC":
-              r = GibbsMixingUNIFAC(self.Species,self.Length,self.xComp,self.Temp)
-              dgMix = r.dGibbsFreeMixing()
+              r = GibbsMixingUNIFAC(self.Species,self.Length,self.Temp)
+              dgMix = r.dGibbsFreeMixing(self.xComp[0])
        elif self.Method == "PCSAFT":
               r = GibbsMixingPCSAFT(self.Species,self.Length,self.Temp,self.Pre,self.xComp)
               A = r.dGibbsFreeMixing()
@@ -636,7 +637,7 @@ class GibbsMixingFH(object):
  def GibbsFreeMixing(self):
        chi = self.chi
        Nmono=self.Nmono
-       xComp=self.xComp
+       xComp = self.xComp
        return xComp[0]/Nmono[0]*np.log(xComp[0])+xComp[1]/Nmono[1]*np.log(xComp[1])+chi*xComp[0]*xComp[1]
  def dGibbsFreeMixing(self):
        chi = self.chi
@@ -645,45 +646,48 @@ class GibbsMixingFH(object):
        return np.log(xComp[0])/Nmono[0]-np.log(xComp[1])/Nmono[1]+chi*(1-2*xComp[0])+1/Nmono[0]-1/Nmono[1]
 
 class GibbsMixingUNIFAC(object):
- def __init__(self,Species,Length,xComp,Temp):
-       self.xComp = xComp
+ def __init__(self,Species,Length,Temp):
        self.Temp = Temp[0]
        self.Species = Species
        self.Length = Length
- def GibbsFreeMixing(self):
-       ln_gamma      = self.ln_gamma()
-       xComp         = self.xComp
+ def dGibbsFreeMixing(self,x):
+       return grad(self.GibbsFreeMixing)(x)
+ def GibbsFreeMixing(self,x):
+       ln_gamma      = self.ln_gamma(x)
        Temp          = self.Temp
        A = 0.
+       xComp = [x,1-x]
        for i in range(len(xComp)):
               A+= xComp[i]*(np.log(xComp[i])+ln_gamma[i])
        return A
- def ln_gamma(self):
+ def ln_gamma(self,x):
        Species = self.Species
-       ln_gamma_comb = self.ln_gamma_comb()
-       ln_gamma_fv   = self.ln_gamma_fv()
-       ln_gamma_res  = self.ln_gamma_res()
-       ln_gamma      = np.zeros(len(ln_gamma_comb))
+       ln_gamma_comb = self.ln_gamma_comb(x)
+       ln_gamma_fv   = self.ln_gamma_fv(x)
+       ln_gamma_res  = self.ln_gamma_res(x)
+       ln_gamma      = []
        for i in range(len(Species)):
-              ln_gamma[i] = ln_gamma_comb[i]+ln_gamma_fv[i]+ln_gamma_res[i]
+              ln_gamma.append(ln_gamma_comb[i]+ln_gamma_fv[i]+ln_gamma_res[i])
        return ln_gamma
 # Combinatorial contribution
- def ln_gamma_comb (self):
-       xComp = self.xComp
+ def ln_gamma_comb (self,x):
+       xComp = [x,1-x]
 
-       phi = self.phi()
-
-       ln_gamma_comb = np.log(phi/xComp) + 1 - (phi/xComp)
+       phi = self.phi(x)
+       ln_gamma_comb =[]
+       for i in range(len(phi)):
+              ln_gamma_comb.append(np.log(phi[i]/xComp[i]) + 1 - (phi[i]/xComp[i]))
        return ln_gamma_comb
 
- def  phi(self):
-       xComp = self.xComp
+ def  phi(self,x):
+       xComp = [x,1-x]
        ri    = self.r_i()
-       phi   = np.zeros((len(ri)))
+       phi   = []
        A=0.
        for i in range(len(xComp)):
               A += ((xComp[i]*(ri[i]**(0.75))))
-       phi = xComp*ri**(0.75)/A
+       for i in range(len(xComp)):
+              phi.append(xComp[i]*ri[i]**(0.75)/A)
        return phi
 
  def r_i(self):
@@ -731,44 +735,48 @@ class GibbsMixingUNIFAC(object):
        red_volume = vol/(15.17*1.28*ri)
        return red_volume
 
- def red_volume_mix (self):
-       xComp = self.xComp
+ def red_volume_mix (self,x):
+       xComp = [x,1-x]
        vol = self.volume()
        ri = self.r_i()
        Species = self.Species
        Length = self.Length
-       A = np.zeros((len(Species)))
-       wComp = np.zeros((len(Species)))
+       A = []
+       wComp = []
        # Calculate weight fractions from mole fractions
        for i in range(len(Species)):
-              A[i] = xComp[i]*Length[i]*Segment_mw[Species[i]]
-       wComp  = A / sum(A)
-       red_vol_mix = (sum(vol*wComp))/(15.17*1.28*sum(ri*wComp))
+              A.append(xComp[i]*Length[i]*Segment_mw[Species[i]])
+       
+       for i in range(len(Species)):
+              wComp.append(A[i]/np.sum(A))
+       red_vol_mix = (np.sum(vol*wComp))/(15.17*1.28*np.sum(ri*wComp))
        return red_vol_mix
 
- def ln_gamma_fv(self):
+ def ln_gamma_fv(self,x):
        red_vol     = self.red_volume()
-       red_vol_mix = self.red_volume_mix()
+       red_vol_mix = self.red_volume_mix(x)
        Ci          = self.C_i_coeff()
-       ln_gamma_fv = np.zeros((len(Ci)))
+       ln_gamma_fv = []
+       # print(red_vol_mix,red_vol)
        for i in range(len(red_vol)):
-              ln_gamma_fv[i] = 3.0*Ci[i]*np.log((red_vol[i]**(1/3)- 1.0)/(red_vol_mix**(1/3) - 1.0)) - Ci[i]*((red_vol[i]/red_vol_mix)-1.0)*((1.0 - (1.0/red_vol[i]**(1/3)))**(-1.0))
+              ln_gamma_fv.append(3.0*Ci[i]*np.log((red_vol[i]**(1/3)- 1.0)/(red_vol_mix**(1/3) - 1.0)) - Ci[i]*((red_vol[i]/red_vol_mix)-1.0)*((1.0 - (1.0/red_vol[i]**(1/3)))**(-1.0)))
        return ln_gamma_fv
  
  # Residual Contribution
- def ln_gamma_res(self):
+ def ln_gamma_res(self,x):
        Species = self.Species
-       lnGammaK = self.lnGammaK()
+       lnGammaK = self.lnGammaK(x)
        lnGammaKi = self.lnGammaKi()
-       ln_gamma_res = np.zeros((len(Species)))
+       ln_gamma_res = []
        Length = self.Length
        for i in range(len(Species)):
+              ln_gamma_res.append([0])
               for group in list(Polymer_groups[Species[i]].keys()):
                      ln_gamma_res[i]+=Length[i]*Polymer_groups[Species[i]][group]*(lnGammaK[group]-lnGammaKi[Species[i]][group])
        return ln_gamma_res
- def lnGammaK(self):
+ def lnGammaK(self,x):
        Temp =self.Temp
-       H = self.Hm()
+       H = self.Hm(x)
        lnGammaK = copy.deepcopy(R_k)
        for k in list(R_k):
               B = 0.
@@ -781,10 +789,10 @@ class GibbsMixingUNIFAC(object):
                      C += H[m]*np.exp(-a_nm[k][m]/Temp)/A
               lnGammaK[k] = QK[k]*(1-np.log(B)-C)
        return lnGammaK
- def Hm(self):
+ def Hm(self,x):
        B = 0.
        A = copy.deepcopy(R_k)
-       X = self.Xm()
+       X = self.Xm(x)
        for m in list(R_k):
               A[m] = QK[m]*X[m]
               B   += A[m]
@@ -793,9 +801,9 @@ class GibbsMixingUNIFAC(object):
               H[m] = A[m]/B
        return H
 
- def Xm(self):
+ def Xm(self,x):
        Species = self.Species
-       xComp   = self.xComp
+       xComp = [x,1-x]
        Length = self.Length
        C = 0.
        B = copy.deepcopy(R_k)
@@ -1056,11 +1064,11 @@ SEGMENT = {
 }
 
 Binary_k = {
-"PB": {"PS":-0.00016},
-"PS": {"PB":-0.00016}
+"PB": {"PS":-0.000356697},
+"PS": {"PB":-0.000356697}
 }
 
 CHI = {
-       "PMMA": {"PS": 0.315},
-       "PS": {"PMMA": 0.315}
+       "PB": {"PS": 0.315},
+       "PS": {"PB": 0.315}
 }

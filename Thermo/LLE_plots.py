@@ -2,27 +2,33 @@ import numpy as np
 import matplotlib.pyplot as plt
 from LLESolver import LLESolvers
 
-Length = [2585/54.1,1672/104.1]
+Length = [1100/54.1,1672/104.1]
 Species = ["PB","PS"]
-Method = "PCSAFT"
+Method = "UNIFAC"
 Solver = "GTP"
 
-Temp = np.linspace(270,370,50)
-r = LLESolvers(Solver,Method,Species,Length)
+Temp = np.linspace(270,310,50)
+rSAFT = LLESolvers(Solver,"PCSAFT",Species,Length)
+rUNIFAC = LLESolvers(Solver,"UNIFAC",Species,Length)
 
-x1 = []
-x2 = []
+x1_SAFT = []
+x2_SAFT = []
+x1_UNIFAC = []
+x2_UNIFAC = []
 for i in range(len(Temp)):
     if i==0:
-        X=r.LLE(Temp[i])
+        X_SAFT=rSAFT.LLE(Temp[i])
+        X_UNIFAC=rUNIFAC.LLE(Temp[i])
     else:
-        X=r.LLE(Temp[i],1e5,[x1[i-1],x2[i-1]])
+        X_SAFT=rSAFT.LLE(Temp[i],1e5,[x1_SAFT[i-1],x2_SAFT[i-1]])
+        X_UNIFAC=rUNIFAC.LLE(Temp[i],1e5,[x1_UNIFAC[i-1],x2_UNIFAC[i-1]])
         # X = r.LLE(Temp[i])
-    x1.append(X[0])
-    x2.append(X[1])
+    x1_UNIFAC.append(X_UNIFAC[0])
+    x2_UNIFAC.append(X_UNIFAC[1])
+    x1_SAFT.append(X_SAFT[0])
+    x2_SAFT.append(X_SAFT[1])
+    print(X_UNIFAC,X_SAFT)
     print(i)
-
-print(x1,x2)
 plt.rc('font', family='serif',size=16)
 plt.rc('text', usetex=True)
 plt.rc('xtick', labelsize='small')
@@ -30,8 +36,11 @@ plt.rc('ytick', labelsize='small')
 fig = plt.figure(figsize=(7, 5.25))
 ax = fig.add_subplot(1, 1, 1)
 
-ax.plot(x1,Temp,color='k', ls='solid')
-ax.plot(x2,Temp,color='k', ls='solid')
+ax.plot(x1_SAFT,Temp,color='k', ls='solid')
+ax.plot(x2_SAFT,Temp,color='k', ls='solid')
+ax.plot(x1_UNIFAC,Temp,color='k', ls='dashed')
+ax.plot(x2_UNIFAC,Temp,color='k', ls='dashed')
+ax.plot([0.7,0.5,0.3],[294.15,301.05,298.75],'rx')
 ax.set_xlabel(r'\textit{x}')
 ax.set_ylabel(r'\textit{T}')
 ax.set_xlim(0,1)

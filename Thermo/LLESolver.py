@@ -76,12 +76,16 @@ class TangentPlaneSolver(object):
      Mr = [Length[0]*54.1,Length[1]*104.1]
 
      r1  = ThermoMix(Method,Species,Length,[x[0]/Mr[0]/(x[0]*(1/Mr[0]-1/Mr[1])+1/Mr[1]),1-x[0]/Mr[0]/(x[0]*(1/Mr[0]-1/Mr[1])+1/Mr[1])],[Temp],[Pre])
-     g1  = r1.g_res()
-    #  g1  = [r1.GibbsFreeMixing(),r1.dGibbsFreeMixing()]
+     if Method == "PCSAFT":
+        g1  = r1.g_res()
+     else:
+        g1  = [r1.GibbsFreeMixing(),r1.dGibbsFreeMixing()]
 
      r2  = ThermoMix(Method,Species,Length,[x[1]/Mr[0]/(x[1]*(1/Mr[0]-1/Mr[1])+1/Mr[1]),1-x[1]/Mr[0]/(x[1]*(1/Mr[0]-1/Mr[1])+1/Mr[1])],[Temp],[Pre])
-     g2  = r2.g_res()
-    #  g2  = [r2.GibbsFreeMixing(),r2.dGibbsFreeMixing()]
+     if Method == "PCSAFT":
+        g2  = r2.g_res()
+     else:
+        g2  = [r2.GibbsFreeMixing(),r2.dGibbsFreeMixing()]
      return [g2[1]-g1[1],(g2[1]*x[1]/Mr[0]/(x[1]*(1/Mr[0]-1/Mr[1])+1/Mr[1])-g1[1]*x[0]/Mr[0]/(x[0]*(1/Mr[0]-1/Mr[1])+1/Mr[1]))+g1[0]-g2[0]]
  def Jac(self,x,*arg):
      Method,Species,Length,Temp,Pre = arg
