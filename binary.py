@@ -8,6 +8,7 @@ import os
 import time
 import sys
 from FHTaylor import taylorapprox_fullFH, taylorapprox_logonlyFH
+from Thermo.Thermo import ThermoMix
 from parameters.params import (
     A_RAW,
     NOISE_MAGNITUDE,
@@ -154,7 +155,8 @@ elif SIZE_DISPARITY == "LARGE":
 
 if GIBBS == "FH":
     #Flory-Huggins Expression
-    g = ( x_a * ln(x_a) / N_A ) + ((1.0-x_a)*ln(1-x_a)/ N_B) + x_a*(1.0-x_a)*chi_AB 
+    r = ThermoMix("FH",["PB",PS],[N_A,N_B])
+    g = r.GibbsFreeMixing(x_a)
     print("full FH")
 elif GIBBS == "TaylorApproxFullFH":
     g = taylorapprox_fullFH(N_A, N_B, chi_AB, x_a)

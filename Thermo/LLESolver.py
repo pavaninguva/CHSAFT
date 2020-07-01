@@ -27,15 +27,15 @@ class vonSolmsLLE(object):
  def Spinodal(self,x,*arg):
      Method,Species,Length,Temp,Pre,m = arg
      r  = ThermoMix(Method,Species,Length,[x[0],1-x[0]],[Temp],[Pre])
-     return m*r.dGibbsFreeMixing()
+     return m*r.dGibbsFreeMixing([x[0]/Mr[0]/(x[0]*(1/Mr[0]-1/Mr[1])+1/Mr[1]),1-x[0]/Mr[0]/(x[0]*(1/Mr[0]-1/Mr[1])+1/Mr[1])])
 
  def Equilibrium(self,x,*arg):
      Method,Species,Length,Temp,Pre,xSpn = arg
      r0 = ThermoMix(Method,Species,Length,[xSpn,1-xSpn],[Temp],[Pre])
-     g0 = r0.g_res()
+     g0 = r0.g_res([x[0]/Mr[0]/(x[0]*(1/Mr[0]-1/Mr[1])+1/Mr[1]),1-x[0]/Mr[0]/(x[0]*(1/Mr[0]-1/Mr[1])+1/Mr[1])])
 
      r  = ThermoMix(Method,Species,Length,[x[0],1-x[0]],[Temp],[Pre])
-     g  = r.g_res()
+     g  = r.g_res([x[0]/Mr[0]/(x[0]*(1/Mr[0]-1/Mr[1])+1/Mr[1]),1-x[0]/Mr[0]/(x[0]*(1/Mr[0]-1/Mr[1])+1/Mr[1])])
     #  dg  = r.dGibbsFreeMixing()
      return (g[0]-g0[0])/(x[0]-xSpn)-g[1]
  def LLE(self,Temp=298,Pre=1e5):
@@ -73,19 +73,19 @@ class TangentPlaneSolver(object):
      self.Length = Length
  def Equilibrium(self,x,*arg):
      Method,Species,Length,Temp,Pre = arg
-     Mr = [Length[0]*54.1,Length[1]*104.1]
+     Mr = [Length[0]*101.12,Length[1]*104.1]
 
-     r1  = ThermoMix(Method,Species,Length,[x[0]/Mr[0]/(x[0]*(1/Mr[0]-1/Mr[1])+1/Mr[1]),1-x[0]/Mr[0]/(x[0]*(1/Mr[0]-1/Mr[1])+1/Mr[1])],[Temp],[Pre])
+     r1  = ThermoMix(Method,Species,Length,[Temp],[Pre])
      if Method == "PCSAFT":
-        g1  = r1.g_res()
+        g1  = r1.g_res(x[0]/Mr[0]/(x[0]*(1/Mr[0]-1/Mr[1])+1/Mr[1]))
      else:
-        g1  = [r1.GibbsFreeMixing(),r1.dGibbsFreeMixing()]
+        g1  = [r1.GibbsFreeMixing(x[0]/Mr[0]/(x[0]*(1/Mr[0]-1/Mr[1])+1/Mr[1])),r1.dGibbsFreeMixing(x[0]/Mr[0]/(x[0]*(1/Mr[0]-1/Mr[1])+1/Mr[1]))]
 
-     r2  = ThermoMix(Method,Species,Length,[x[1]/Mr[0]/(x[1]*(1/Mr[0]-1/Mr[1])+1/Mr[1]),1-x[1]/Mr[0]/(x[1]*(1/Mr[0]-1/Mr[1])+1/Mr[1])],[Temp],[Pre])
+     r2  = ThermoMix(Method,Species,Length,[Temp],[Pre])
      if Method == "PCSAFT":
-        g2  = r2.g_res()
+        g2  = r2.g_res(x[1]/Mr[0]/(x[1]*(1/Mr[0]-1/Mr[1])+1/Mr[1]))
      else:
-        g2  = [r2.GibbsFreeMixing(),r2.dGibbsFreeMixing()]
+        g2  = [r2.GibbsFreeMixing(x[1]/Mr[0]/(x[1]*(1/Mr[0]-1/Mr[1])+1/Mr[1])),r2.dGibbsFreeMixing(x[1]/Mr[0]/(x[1]*(1/Mr[0]-1/Mr[1])+1/Mr[1]))]
      return [g2[1]-g1[1],(g2[1]*x[1]/Mr[0]/(x[1]*(1/Mr[0]-1/Mr[1])+1/Mr[1])-g1[1]*x[0]/Mr[0]/(x[0]*(1/Mr[0]-1/Mr[1])+1/Mr[1]))+g1[0]-g2[0]]
  def Jac(self,x,*arg):
      Method,Species,Length,Temp,Pre = arg
@@ -116,7 +116,7 @@ class TangentPlaneSolver(object):
      #  try:
     #  x = least_squares(self.Equilibrium,[0.05,0.95],bounds=((0,0),(1,1)),args=(Method,Species,Length,Temp,Pre))
      if not x0:
-        x = least_squares(self.Equilibrium,[0.05,0.95],bounds=((0,0),(1,1)),args=(Method,Species,Length,Temp,Pre))
+        x = least_squares(self.Equilibrium,[0.01,0.99],bounds=((0,0),(1,1)),args=(Method,Species,Length,Temp,Pre))
         # x = root(self.Equilibrium,[0.1,0.90],args=(Method,Species,Length,Temp,Pre))
      else:
         x = least_squares(self.Equilibrium,x0,bounds=((0,0),(1,1)),args=(Method,Species,Length,Temp,Pre))

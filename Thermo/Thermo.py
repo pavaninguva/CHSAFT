@@ -8,45 +8,38 @@ from scipy.optimize import fsolve, least_squares
 
 
 class ThermoMix(object):
- def __init__(self,Method,Species,Length,xComp,Temp=[298],Pre=[1e5]):
+ def __init__(self,Method,Species,Length,Temp=[298],Pre=[1e5],CH="Off"):
          self.Method = Method
          self.Species = Species
          self.Length = Length
-         self.xComp = xComp
          self.Temp = Temp
          self.Pre = Pre
- def GibbsFreeMixing(self):
-       if self.Method == "FH":
-              r = GibbsMixingFH(self.Species,self.xComp,self.Length)
-              gMix = r.GibbsFreeMixing()
-       elif self.Method == "UNIFAC":
-              r = GibbsMixingUNIFAC(self.Species,self.Length,self.Temp)
-              gMix = r.GibbsFreeMixing(self.xComp[0])[0]
-       elif self.Method == "PCSAFT":
-              r = GibbsMixingPCSAFT(self.Species,self.Length,self.Temp,self.Pre,self.xComp)
-              A = r.GibbsFreeMixing()
-              gMix = A[0]
+         self.CH  = CH
+         if self.Method == "FH":
+              self.r = GibbsMixingFH(self.Species,self.Length,self.Temp)
+         elif self.Method == "UNIFAC":
+              self.r = GibbsMixingUNIFAC(self.Species,self.Length,self.Temp)
+         elif self.Method == "PCSAFT":
+              if CH=="Off":
+                     self.r = GibbsMixingPCSAFT(self.Species,self.Length,self.Temp,self.Pre)
+              else:
+                     self.r = GibbsMixingPCSAFT(self.Species,self.Length,self.Temp,self.Pre,CH)
+ def GibbsFreeMixing(self,x):
+       if self.CH=="Off":
+              gMix = self.r.GibbsFreeMixing(x)
+       else:
+              gMix = self.r.GibbsFreeMixing_CH(x)
        return gMix
- def dGibbsFreeMixing(self):
-       if self.Method == "FH":
-              r = GibbsMixingFH(self.Species,self.xComp,self.Length)
-              dgMix = r.dGibbsFreeMixing()
-       elif self.Method == "UNIFAC":
-              r = GibbsMixingUNIFAC(self.Species,self.Length,self.Temp)
-              dgMix = r.dGibbsFreeMixing(self.xComp[0])
-       elif self.Method == "PCSAFT":
-              r = GibbsMixingPCSAFT(self.Species,self.Length,self.Temp,self.Pre,self.xComp)
-              A = r.dGibbsFreeMixing()
-              dgMix = A[0]
+ def dGibbsFreeMixing(self,x):
+       dgMix=self.r.dGibbsFreeMixing(x)
        return dgMix
- def g_res(self):
+ def g_res(self,x):
        if self.Method == "FH":
               print('Not supported')
        elif self.Method == "UNIFAC":
               print('Not supported')
        elif self.Method == "PCSAFT":
-              r = GibbsMixingPCSAFT(self.Species,self.Length,self.Temp,self.Pre,self.xComp)
-              A = r.g_res()
+              A=self.r.g_res(x)
        return A
 
 class PCSAFT(object):
@@ -505,7 +498,7 @@ class PCSAFT(object):
      return pi*NParticles*nsegment*pow(HSd,m)/Vol/6
 
 class  GibbsMixingPCSAFT(object):
- def __init__(self, Species, Length,Temperature,Pressure,xComp):
+ def __init__(self, Species, Length,Temperature,Pressure,CH="Off"):
         NSpecies = len(Species)
         epsilon = []
         sigma = []
@@ -517,20 +510,46 @@ class  GibbsMixingPCSAFT(object):
                sigma.append(SIGMA[Species[i]])
                nsegment.append(SEGMENT[Species[i]]*Length[i])
                Mr.append(Segment_mw[Species[i]]*Length[i])
+        for i in range(len(Species)):
                for j in range(len(Species)):
                       if Species[i]==Species[j]:
                             k[i,j]=0
                       else:
-                            k[i,j]=Binary_k[Species[i]][Species[j]]          
+                            Param=Binary_k[Species[i]][Species[j]]
+                            A = Param[0]/Length[i]/Segment_mw[Species[i]]+Param[1]/Length[j]/Segment_mw[Species[j]]+Param[2]  
+                            k[i,j] = 1-A*2**6*(sigma[i]*sigma[j])**3/(sigma[i]+sigma[j])**6  
         self.epsilon = np.array(epsilon)
         self.sigma = np.array(sigma)
         self.nsegment = np.array(nsegment)
         self.Mr = np.array(Mr)
         self.k  = k
-        self.xComp=np.array(xComp)
-        self.NParticles=6.02e23
+       
+        NParticles = 6.02214086e23
+        self.NParticles=6.02214086e23
         self.Temp=np.array(Temperature)
+        Temp = Temperature[0]
         self.Pre=np.array(Pressure)
+        if CH!="Off":
+              Vol_pure = []
+              for i in range(len(Length)):
+                     x0 = np.log10(np.sum(NParticles*nsegment[i]*pow(sigma[i],3)*pow(1-0.12*np.exp(-3*epsilon[i]/(Temp)),3))*pi/6/0.5)
+                     lb = np.log10(np.sum(NParticles*nsegment[i]*pow(sigma[i],3)*pow(1-0.12*np.exp(-3*epsilon[i]/(Temp)),3))*pi/6)
+                     ub = np.log10(np.sum(NParticles*nsegment[i]*pow(sigma[i],3)*pow(1-0.12*np.exp(-3*epsilon[i]/(Temp)),3))*pi/6/0.1)
+
+                     V=least_squares(self.Pressure,x0,bounds=(lb,ub),args=(Pressure,[nsegment[i]],[Mr[i]],[epsilon[i]],[sigma[i]],NParticles,Temp,[1.],[[0.]]))
+                     Vol_pure.append(pow(10,V.x[0]))
+              self.Vol_pure = Vol_pure
+              x = np.linspace(0.00001,0.99999,50)
+              Vol = []
+              for i in range(len(x)):
+                     x0 = np.log10(np.sum(NParticles*np.array([x[i],1-x[i]])*self.nsegment*pow(self.sigma,3)*pow(1-0.12*np.exp(-3*self.epsilon/(Temp)),3))*pi/6/0.5)
+                     lb = np.log10(np.sum(NParticles*np.array([x[i],1-x[i]])*self.nsegment*pow(self.sigma,3)*pow(1-0.12*np.exp(-3*self.epsilon/(Temp)),3))*pi/6)
+                     ub = np.log10(np.sum(NParticles*np.array([x[i],1-x[i]])*self.nsegment*pow(self.sigma,3)*pow(1-0.12*np.exp(-3*self.epsilon/(Temp)),3))*pi/6/0.1)
+                     V=least_squares(self.Pressure,x0,bounds=(lb,ub),args=(Pressure,self.nsegment,Mr,self.epsilon,self.sigma,NParticles,Temp,np.array([x[i],1-x[i]]),k))
+                     Vol.append(pow(10,V.x[0]))
+              Vol_E = (Vol-x*Vol_pure[0]-(1-x)*Vol_pure[1])/(x*(1-x))
+              p = np.polyfit(x,Vol_E,4)
+              self.Vol_coef = p
  def Pressure(self,Vol,*arg):
     k_B=1.38064852e-23
     Pre, nsegment, Mr, epsilon, sigma, NParticles, Temp, xComp, k = arg
@@ -539,8 +558,8 @@ class  GibbsMixingPCSAFT(object):
     return (Z*NParticles*k_B*Temp/pow(10,Vol)-Pre)
 
  ## Gibbs Free Energy of Mixing ##
- def GibbsFreeMixing(self):
-    xComp=self.xComp
+ def GibbsFreeMixing(self,x):
+    xComp = np.array([x,1-x])
     Temp=self.Temp
     NParticles=self.NParticles
     nsegment=self.nsegment
@@ -556,7 +575,7 @@ class  GibbsMixingPCSAFT(object):
         tideal=xComp[i]*np.log(xComp[i])+tideal
         x0 = np.log10(np.sum(NParticles*nsegment[i]*pow(sigma[i],3)*pow(1-0.12*np.exp(-3*epsilon[i]/(Temp)),3))*pi/6/0.5)
         lb = np.log10(np.sum(NParticles*nsegment[i]*pow(sigma[i],3)*pow(1-0.12*np.exp(-3*epsilon[i]/(Temp)),3))*pi/6)
-        ub = np.log10(np.sum(NParticles*nsegment[i]*pow(sigma[i],3)*pow(1-0.12*np.exp(-3*epsilon[i]/(Temp)),3))*pi/6/0.3)
+        ub = np.log10(np.sum(NParticles*nsegment[i]*pow(sigma[i],3)*pow(1-0.12*np.exp(-3*epsilon[i]/(Temp)),3))*pi/6/0.1)
 
         Vol1=least_squares(self.Pressure,x0,bounds=(lb,ub),args=(Pre,[nsegment[i]],[Mr[i]],[epsilon[i]],[sigma[i]],NParticles,Temp,[1.],[[0.]]))
         r=PCSAFT([nsegment[i]],[Mr[i]],[epsilon[i]],[sigma[i]],NParticles,Temp,pow(10,Vol1.x[0]),[1.],[[0.]])
@@ -565,18 +584,39 @@ class  GibbsMixingPCSAFT(object):
         tres=(a_res+Z_res-np.log(Z_res+1))*xComp[i]+tres
     x0 = np.log10(np.sum(NParticles*xComp*nsegment*pow(sigma,3)*pow(1-0.12*np.exp(-3*epsilon/(Temp)),3))*pi/6/0.5)
     lb = np.log10(np.sum(NParticles*xComp*nsegment*pow(sigma,3)*pow(1-0.12*np.exp(-3*epsilon/(Temp)),3))*pi/6)
-    ub = np.log10(np.sum(NParticles*xComp*nsegment*pow(sigma,3)*pow(1-0.12*np.exp(-3*epsilon/(Temp)),3))*pi/6/0.3)
+    ub = np.log10(np.sum(NParticles*xComp*nsegment*pow(sigma,3)*pow(1-0.12*np.exp(-3*epsilon/(Temp)),3))*pi/6/0.1)
 
     Vol=least_squares(self.Pressure,x0,bounds=(lb,ub),args=(Pre,nsegment,Mr,epsilon,sigma,NParticles,Temp,xComp,k))
-    # Vol=least_squares(self.Pressure,-2.7,bounds=(-3.2,-2.5),args=(Pre,nsegment,Mr,epsilon,sigma,NParticles,Temp,xComp,k))
+    
     r=PCSAFT(nsegment,Mr,epsilon,sigma,NParticles,Temp,pow(10,Vol.x[0]),xComp,k)
     g_res=r.a_res()+r.Z()-1-np.log(r.Z())
-
+    return g_res-tres+tideal
+ def GibbsFreeMixing_CH(self,x):
+    xComp=np.array([x,1-x])
+    Temp=self.Temp
+    NParticles=self.NParticles
+    nsegment=self.nsegment
+    epsilon=self.epsilon
+    sigma=self.sigma
+    Pre=self.Pre
+    Mr=self.Mr
+    k=self.k
+    tideal=0.
+    tres=0.
+    k_B=1.38064852e-23
+    for i in range(len(xComp)):
+        tideal=xComp[i]*np.log(xComp[i])+tideal
+        r=PCSAFT([nsegment[i]],[Mr[i]],[epsilon[i]],[sigma[i]],NParticles,Temp,self.Vol_pure[i],[1.],[[0.]])
+        a_res = r.a_res()
+        Z_res = r.Z()-1
+        tres=(a_res+Z_res-np.log(Z_res+1))*xComp[i]+tres
+    Vol = np.polyval(self.Vol_coef,xComp[0])*xComp[0]*xComp[1]+self.Vol_pure[0]*xComp[0]+self.Vol_pure[1]*xComp[1]
+    r=PCSAFT(nsegment,Mr,epsilon,sigma,NParticles,Temp,Vol,xComp,k)
+    g_res=r.a_res()+r.Z()-1-np.log(r.Z())
     return g_res-tres+tideal
 
-
- def dGibbsFreeMixing(self):
-    xComp=self.xComp
+ def dGibbsFreeMixing(self,x):
+    xComp=[x,1-x]
     Temp=self.Temp
     NParticles=self.NParticles
     nsegment=self.nsegment
@@ -604,8 +644,8 @@ class  GibbsMixingPCSAFT(object):
     mu_mix = r_mix.mu_res()
     
     return np.log(xComp[0])-np.log(xComp[1])+((mu_mix[0]-mu_mix[1]))-((mu_pure1-mu_pure2))
- def g_res(self):
-     xComp=self.xComp
+ def g_res(self,x):
+     xComp=np.array([x,1-x])
      Temp=self.Temp
      NParticles=self.NParticles
      nsegment=self.nsegment
@@ -619,7 +659,7 @@ class  GibbsMixingPCSAFT(object):
      k_B=1.38064852e-23
      x0 = np.log10(np.sum(NParticles*xComp*nsegment*pow(sigma,3)*pow(1-0.12*np.exp(-3*epsilon/(Temp)),3))*pi/6/0.5)
      lb = np.log10(np.sum(NParticles*xComp*nsegment*pow(sigma,3)*pow(1-0.12*np.exp(-3*epsilon/(Temp)),3))*pi/6)
-     ub = np.log10(np.sum(NParticles*xComp*nsegment*pow(sigma,3)*pow(1-0.12*np.exp(-3*epsilon/(Temp)),3))*pi/6/0.3)
+     ub = np.log10(np.sum(NParticles*xComp*nsegment*pow(sigma,3)*pow(1-0.12*np.exp(-3*epsilon/(Temp)),3))*pi/6/0.1)
      
      VolMix=least_squares(self.Pressure,x0,bounds=(lb,ub),args=(Pre,nsegment,Mr,epsilon,sigma,NParticles,Temp,xComp,k))
      r_mix=PCSAFT(nsegment,Mr,epsilon,sigma,NParticles,Temp,pow(10,VolMix.x[0]),xComp,k)
@@ -630,19 +670,18 @@ class  GibbsMixingPCSAFT(object):
      return [g_res,dg_res]
  
 class GibbsMixingFH(object):
- def __init__(self,Species,xComp,Length):
-        self.xComp=np.array(xComp)
+ def __init__(self,Species,Length,Temp):
         self.Nmono=np.array(Length)
-        self.chi = CHI[Species[0]][Species[1]]
- def GibbsFreeMixing(self):
+        self.chi = Hilderbrand[Species[0]][Species[1]]/Temp[0]
+ def GibbsFreeMixing(self,x):
+       xComp = [x,1-x]
        chi = self.chi
        Nmono=self.Nmono
-       xComp = self.xComp
        return xComp[0]/Nmono[0]*np.log(xComp[0])+xComp[1]/Nmono[1]*np.log(xComp[1])+chi*xComp[0]*xComp[1]
- def dGibbsFreeMixing(self):
+ def dGibbsFreeMixing(self,x):
        chi = self.chi
        Nmono=self.Nmono
-       xComp=self.xComp
+       xComp = [x,1-x]
        return np.log(xComp[0])/Nmono[0]-np.log(xComp[1])/Nmono[1]+chi*(1-2*xComp[0])+1/Nmono[0]-1/Nmono[1]
 
 class GibbsMixingUNIFAC(object):
@@ -659,7 +698,7 @@ class GibbsMixingUNIFAC(object):
        xComp = [x,1-x]
        for i in range(len(xComp)):
               A+= xComp[i]*(np.log(xComp[i])+ln_gamma[i])
-       return A
+       return A[0]
  def ln_gamma(self,x):
        Species = self.Species
        ln_gamma_comb = self.ln_gamma_comb(x)
@@ -878,8 +917,8 @@ Polymer_length = {
 
 # Molecular weight of each segment: 
 Segment_mw = {
-    "PMMA": 86,
-#     "PMA": 100,
+#     "PMMA": 86,
+    "PMMA": 101.12,
     "PS": 104.1,
     "PB": 54.1,
     "EtOH": 46.07,
@@ -1058,14 +1097,21 @@ SIGMA = {
 }
 
 SEGMENT = { 
-       "PMMA": 0.0270*100,
+       "PMMA": 0.0270*101.12,
        "PS": 0.0205*104.1,
        "PB": 0.0245*54.1
 }
 
 Binary_k = {
-"PB": {"PS":-0.000356697},
-"PS": {"PB":-0.000356697}
+"PMMA": {"PS":[-0.742158,-5.60327,1.0060222]},
+"PS": {"PMMA":[-5.60327,-0.742158,1.0060222],
+         "PB":[0.449938,-3.503558,1.0020467]},
+"PB": {  "PS":[-3.503558,0.449938,1.0020467]}
+}
+
+Hilderbrand = {
+       "PB":{"PS": 23.2446},
+       "PS":{"PB": 23.2446}
 }
 
 CHI = {
