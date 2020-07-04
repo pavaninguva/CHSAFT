@@ -155,7 +155,7 @@ elif SIZE_DISPARITY == "LARGE":
 
 if GIBBS == "FH":
     #Flory-Huggins Expression
-    r = ThermoMix("FH",["PB",PS],[N_A,N_B])
+    r = ThermoMix("FH",["PB","PS"],[N_A,N_B])
     g = r.GibbsFreeMixing(x_a)
     print("full FH")
 elif GIBBS == "TaylorApproxFullFH":

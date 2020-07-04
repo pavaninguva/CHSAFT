@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 xComp = np.linspace(0.000001,0.999999,100)
-Length = [100,100]
+Length = [2585/54.1,1344/104.1]
 Species = ["PB","PS"]
 Temp = 370
 
@@ -14,8 +14,8 @@ gMix_SAFT = []
 gMix_SAFT_CH = []
 FH  = ThermoMix("FH",Species,Length,[Temp])
 UNIFAC  = ThermoMix("UNIFAC",Species,Length,[Temp])
-SAFT  = ThermoMix("PCSAFT",Species,Length,[Temp])
-SAFT_CH = ThermoMix("PCSAFT",Species,Length,[Temp],CH="On")
+SAFT  = ThermoMix("PCSAFT",Species,Length,[Temp],k=0.000720986)
+SAFT_CH = ThermoMix("PCSAFT",Species,Length,[Temp],CH="On",k=0.000720986)
 for i in range(len(xComp)):
     
     gMix_FH.append(FH.GibbsFreeMixing(xComp[i]))

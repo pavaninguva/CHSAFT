@@ -1,14 +1,12 @@
 import autograd.numpy as np 
 from autograd import grad
-import pandas as pd 
 import copy
 from math import pi
-import matplotlib.pyplot as plt
 from scipy.optimize import fsolve, least_squares
 
 
 class ThermoMix(object):
- def __init__(self,Method,Species,Length,Temp=[298],Pre=[1e5],CH="Off"):
+ def __init__(self,Method,Species,Length,Temp=[298],Pre=[1e5],k=None,CH="Off"):
          self.Method = Method
          self.Species = Species
          self.Length = Length
@@ -21,9 +19,9 @@ class ThermoMix(object):
               self.r = GibbsMixingUNIFAC(self.Species,self.Length,self.Temp)
          elif self.Method == "PCSAFT":
               if CH=="Off":
-                     self.r = GibbsMixingPCSAFT(self.Species,self.Length,self.Temp,self.Pre)
+                     self.r = GibbsMixingPCSAFT(self.Species,self.Length,self.Temp,self.Pre,k)
               else:
-                     self.r = GibbsMixingPCSAFT(self.Species,self.Length,self.Temp,self.Pre,CH)
+                     self.r = GibbsMixingPCSAFT(self.Species,self.Length,self.Temp,self.Pre,k,CH)
  def GibbsFreeMixing(self,x):
        if self.CH=="Off":
               gMix = self.r.GibbsFreeMixing(x)
@@ -498,26 +496,30 @@ class PCSAFT(object):
      return pi*NParticles*nsegment*pow(HSd,m)/Vol/6
 
 class  GibbsMixingPCSAFT(object):
- def __init__(self, Species, Length,Temperature,Pressure,CH="Off"):
+ def __init__(self, Species, Length,Temperature,Pressure,k=None,CH="Off"):
         NSpecies = len(Species)
         epsilon = []
         sigma = []
         nsegment = []
         Mr = []
-        k = np.zeros((NSpecies,NSpecies))
+        
         for i in range(len(Species)):
                epsilon.append(EPSILON[Species[i]])
                sigma.append(SIGMA[Species[i]])
                nsegment.append(SEGMENT[Species[i]]*Length[i])
                Mr.append(Segment_mw[Species[i]]*Length[i])
-        for i in range(len(Species)):
-               for j in range(len(Species)):
-                      if Species[i]==Species[j]:
-                            k[i,j]=0
-                      else:
-                            Param=Binary_k[Species[i]][Species[j]]
-                            A = Param[0]/Length[i]/Segment_mw[Species[i]]+Param[1]/Length[j]/Segment_mw[Species[j]]+Param[2]  
-                            k[i,j] = 1-A*2**6*(sigma[i]*sigma[j])**3/(sigma[i]+sigma[j])**6  
+        if k==None:
+              k = np.zeros((NSpecies,NSpecies))
+              for i in range(len(Species)):
+                     for j in range(len(Species)):
+                            if Species[i]==Species[j]:
+                                   k[i,j]=0
+                            else:
+                                   Param=Binary_k[Species[i]][Species[j]]
+                                   A = Param[0]/Length[i]/Segment_mw[Species[i]]+Param[1]/Length[j]/Segment_mw[Species[j]]+Param[2]  
+                                   k[i,j] = 1-A*2**6*(sigma[i]*sigma[j])**3/(sigma[i]+sigma[j])**6  
+        else: 
+              k = np.array([[0,k],[k,0]])
         self.epsilon = np.array(epsilon)
         self.sigma = np.array(sigma)
         self.nsegment = np.array(nsegment)
@@ -548,7 +550,7 @@ class  GibbsMixingPCSAFT(object):
                      V=least_squares(self.Pressure,x0,bounds=(lb,ub),args=(Pressure,self.nsegment,Mr,self.epsilon,self.sigma,NParticles,Temp,np.array([x[i],1-x[i]]),k))
                      Vol.append(pow(10,V.x[0]))
               Vol_E = (Vol-x*Vol_pure[0]-(1-x)*Vol_pure[1])/(x*(1-x))
-              p = np.polyfit(x,Vol_E,4)
+              p = np.polyfit(x,Vol_E,6)
               self.Vol_coef = p
  def Pressure(self,Vol,*arg):
     k_B=1.38064852e-23
@@ -681,7 +683,7 @@ class GibbsMixingFH(object):
  def dGibbsFreeMixing(self,x):
        chi = self.chi
        Nmono=self.Nmono
-       xComp = [x,1-x]
+       xComp = np.array([x,1-x])
        return np.log(xComp[0])/Nmono[0]-np.log(xComp[1])/Nmono[1]+chi*(1-2*xComp[0])+1/Nmono[0]-1/Nmono[1]
 
 class GibbsMixingUNIFAC(object):
@@ -743,6 +745,7 @@ class GibbsMixingUNIFAC(object):
        Species = self.Species
        Temp    = self.Temp
        volume  = np.zeros((len(Species)))
+       Length  = self.Length
        for i in range(len(Species)):
               if Species[i] in list(T_G.keys()):
                      if Temp <= T_G[Species[i]]:
@@ -752,7 +755,7 @@ class GibbsMixingUNIFAC(object):
               else:
                      coeff = expansion_coefficients[Species[i]]
               rho = rho_reference[Species[i]] / (1 + coeff*(Temp - rho_reference_temp[Species[i]]))
-              volume[i] = 1 / rho
+              volume[i] = 1 / rho * Length[i]*Segment_mw[Species[i]]
        return volume
 
  def C_i_coeff (self):
@@ -788,7 +791,7 @@ class GibbsMixingUNIFAC(object):
        
        for i in range(len(Species)):
               wComp.append(A[i]/np.sum(A))
-       red_vol_mix = (np.sum(vol*wComp))/(15.17*1.28*np.sum(ri*wComp))
+       red_vol_mix = (np.sum(vol*xComp))/(15.17*1.28*np.sum(ri*xComp))
        return red_vol_mix
 
  def ln_gamma_fv(self,x):
@@ -796,7 +799,6 @@ class GibbsMixingUNIFAC(object):
        red_vol_mix = self.red_volume_mix(x)
        Ci          = self.C_i_coeff()
        ln_gamma_fv = []
-       # print(red_vol_mix,red_vol)
        for i in range(len(red_vol)):
               ln_gamma_fv.append(3.0*Ci[i]*np.log((red_vol[i]**(1/3)- 1.0)/(red_vol_mix**(1/3) - 1.0)) - Ci[i]*((red_vol[i]/red_vol_mix)-1.0)*((1.0 - (1.0/red_vol[i]**(1/3)))**(-1.0)))
        return ln_gamma_fv
@@ -1105,8 +1107,8 @@ SEGMENT = {
 Binary_k = {
 "PMMA": {"PS":[-0.742158,-5.60327,1.0060222]},
 "PS": {"PMMA":[-5.60327,-0.742158,1.0060222],
-         "PB":[0.449938,-3.503558,1.0020467]},
-"PB": {  "PS":[-3.503558,0.449938,1.0020467]}
+         "PB":[-3.503558,0.449938,1.0020467]},
+"PB": {  "PS":[0.449938,-3.503558,1.0020467]}
 }
 
 Hilderbrand = {

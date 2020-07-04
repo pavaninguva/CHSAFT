@@ -4,37 +4,39 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 class LLESolvers(object):
- def __init__(self,Solver,Method,Species,Length):
+ def __init__(self,Solver,Method,Species,Length,k=None):
      self.Method = Method
      self.Solver = Solver
      self.Species = Species
      self.Length = Length
+     self.k      = k
  def LLE(self,Temp=298,Pre=1e5,x0=None):
      if self.Solver=="vonSolms":
-         r = vonSolmsLLE(self.Method,self.Species,self.Length)
+         r = vonSolmsLLE(self.Method,self.Species,self.Length,self.k)
          x = r.LLE(Temp=Temp,Pre=Pre)
      else:
-         r = TangentPlaneSolver(self.Method,self.Species,self.Length)
+         r = TangentPlaneSolver(self.Method,self.Species,self.Length,self.k)
          x = r.LLE(Temp=Temp,Pre=Pre,x0=x0)
      return x
 
 class vonSolmsLLE(object):
- def __init__(self,Method,Species,Length):
+ def __init__(self,Method,Species,Length,k):
      self.Method = Method
      self.Species = Species
      self.Length = Length
+     self.k      = k
  
  def Spinodal(self,x,*arg):
-     Method,Species,Length,Temp,Pre,m = arg
-     r  = ThermoMix(Method,Species,Length,[x[0],1-x[0]],[Temp],[Pre])
+     Method,Species,Length,Temp,Pre,k,m = arg
+     r  = ThermoMix(Method,Species,Length,[x[0],1-x[0]],[Temp],[Pre],k)
      return m*r.dGibbsFreeMixing([x[0]/Mr[0]/(x[0]*(1/Mr[0]-1/Mr[1])+1/Mr[1]),1-x[0]/Mr[0]/(x[0]*(1/Mr[0]-1/Mr[1])+1/Mr[1])])
 
  def Equilibrium(self,x,*arg):
-     Method,Species,Length,Temp,Pre,xSpn = arg
-     r0 = ThermoMix(Method,Species,Length,[xSpn,1-xSpn],[Temp],[Pre])
+     Method,Species,Length,Temp,Pre,k,xSpn = arg
+     r0 = ThermoMix(Method,Species,Length,[xSpn,1-xSpn],[Temp],[Pre],k)
      g0 = r0.g_res([x[0]/Mr[0]/(x[0]*(1/Mr[0]-1/Mr[1])+1/Mr[1]),1-x[0]/Mr[0]/(x[0]*(1/Mr[0]-1/Mr[1])+1/Mr[1])])
 
-     r  = ThermoMix(Method,Species,Length,[x[0],1-x[0]],[Temp],[Pre])
+     r  = ThermoMix(Method,Species,Length,[x[0],1-x[0]],[Temp],[Pre],k)
      g  = r.g_res([x[0]/Mr[0]/(x[0]*(1/Mr[0]-1/Mr[1])+1/Mr[1]),1-x[0]/Mr[0]/(x[0]*(1/Mr[0]-1/Mr[1])+1/Mr[1])])
     #  dg  = r.dGibbsFreeMixing()
      return (g[0]-g0[0])/(x[0]-xSpn)-g[1]
@@ -42,12 +44,12 @@ class vonSolmsLLE(object):
      Method = self.Method
      Species = self.Species
      Length = self.Length
-     
+     k      = self.k
      # Finding Spinodal points first
      bnds = ((0,1),)
      try:
-        xSpn1 = minimize(self.Spinodal,(0.5),method='SLSQP',bounds=bnds,args=(Method,Species,Length,Temp,Pre,-1.))
-        xSpn2 = minimize(self.Spinodal,(0.5),method='SLSQP',bounds=bnds,args=(Method,Species,Length,Temp,Pre,1.))
+        xSpn1 = minimize(self.Spinodal,(0.5),method='SLSQP',bounds=bnds,args=(Method,Species,Length,Temp,Pre,k,-1.))
+        xSpn2 = minimize(self.Spinodal,(0.5),method='SLSQP',bounds=bnds,args=(Method,Species,Length,Temp,Pre,k,1.))
 
         x1 = [xSpn1.x[0],xSpn1.x[0]]
         x2 = [xSpn2.x[0],1.]
@@ -55,11 +57,11 @@ class vonSolmsLLE(object):
         while (abs(x2[0]-x2[1])>1e-10 or abs(x1[0]-x1[1])>1e-10) and i<100:
             if (i % 2)==0:
                 x2[0] = x2[1]
-                x = least_squares(self.Equilibrium,(x2[0]+1)/2,bounds=(xSpn2.x[0],1),args=(Method,Species,Length,Temp,Pre,x1[1]))
+                x = least_squares(self.Equilibrium,(x2[0]+1)/2,bounds=(xSpn2.x[0],1),args=(Method,Species,Length,Temp,Pre,k,x1[1]))
                 x2[1] = x.x[0]
             else:
                 x1[0] = x1[1]
-                x = least_squares(self.Equilibrium,(x1[0])/2,bounds=(0,xSpn1.x[0]),args=(Method,Species,Length,Temp,Pre,x2[1]))
+                x = least_squares(self.Equilibrium,(x1[0])/2,bounds=(0,xSpn1.x[0]),args=(Method,Species,Length,Temp,Pre,k,x2[1]))
                 x1[1] = x.x[0]
             i+=1.
         A = [x1[1],x2[1]]
@@ -67,21 +69,22 @@ class vonSolmsLLE(object):
         A = [0.5,0.5]
      return A
 class TangentPlaneSolver(object):
- def __init__(self,Method,Species,Length):
+ def __init__(self,Method,Species,Length,k=None):
      self.Method = Method
      self.Species = Species
      self.Length = Length
+     self.k      = k
  def Equilibrium(self,x,*arg):
-     Method,Species,Length,Temp,Pre = arg
-     Mr = [Length[0]*101.12,Length[1]*104.1]
+     Method,Species,Length,Temp,Pre,k = arg
+     Mr = [Length[0]*Segment_mw[Species[0]],Length[1]*Segment_mw[Species[1]]]
 
-     r1  = ThermoMix(Method,Species,Length,[Temp],[Pre])
+     r1  = ThermoMix(Method,Species,Length,[Temp],[Pre],k)
      if Method == "PCSAFT":
         g1  = r1.g_res(x[0]/Mr[0]/(x[0]*(1/Mr[0]-1/Mr[1])+1/Mr[1]))
      else:
         g1  = [r1.GibbsFreeMixing(x[0]/Mr[0]/(x[0]*(1/Mr[0]-1/Mr[1])+1/Mr[1])),r1.dGibbsFreeMixing(x[0]/Mr[0]/(x[0]*(1/Mr[0]-1/Mr[1])+1/Mr[1]))]
 
-     r2  = ThermoMix(Method,Species,Length,[Temp],[Pre])
+     r2  = ThermoMix(Method,Species,Length,[Temp],[Pre],k)
      if Method == "PCSAFT":
         g2  = r2.g_res(x[1]/Mr[0]/(x[1]*(1/Mr[0]-1/Mr[1])+1/Mr[1]))
      else:
@@ -111,15 +114,16 @@ class TangentPlaneSolver(object):
      Method = self.Method
      Species = self.Species
      Length = self.Length
+     k = self.k
      
      # Finding Spinodal points first
      #  try:
     #  x = least_squares(self.Equilibrium,[0.05,0.95],bounds=((0,0),(1,1)),args=(Method,Species,Length,Temp,Pre))
      if not x0:
-        x = least_squares(self.Equilibrium,[0.01,0.99],bounds=((0,0),(1,1)),args=(Method,Species,Length,Temp,Pre))
+        x = least_squares(self.Equilibrium,[0.01,0.99],bounds=((0,0),(1,1)),args=(Method,Species,Length,Temp,Pre,k))
         # x = root(self.Equilibrium,[0.1,0.90],args=(Method,Species,Length,Temp,Pre))
      else:
-        x = least_squares(self.Equilibrium,x0,bounds=((0,0),(1,1)),args=(Method,Species,Length,Temp,Pre))
+        x = least_squares(self.Equilibrium,x0,bounds=((0,0),(1,1)),args=(Method,Species,Length,Temp,Pre,k))
         # x = root(self.Equilibrium,x0,args=(Method,Species,Length,Temp,Pre))
      A = x.x
     #  except:
@@ -168,3 +172,12 @@ class TangentPlaneSolver(object):
 # # print(Equilibrium(0.5,Method,Species,Length,Temp,Pre,xSpn.x))
 # plt.savefig('gMix.png')
 
+# Molecular weight of each segment: 
+Segment_mw = {
+#     "PMMA": 86,
+    "PMMA": 101.12,
+    "PS": 104.1,
+    "PB": 54.1,
+    "EtOH": 46.07,
+    "Benzene": 78.11
+}
