@@ -3,6 +3,7 @@ from autograd import grad
 import copy
 from math import pi
 from scipy.optimize import fsolve, least_squares
+import ufl
 
 
 class ThermoMix(object):
@@ -47,7 +48,7 @@ class PCSAFT(object):
         self.k=np.array(k)
         self.nsegment = np.array(nsegment)
         self.Mr = np.array(Mr)
-        self.xComp=np.array(xComp)
+        self.xComp=xComp
         self.NParticles=np.array(NParticles)
         self.Temp=np.array(Temperature)
         self.Vol=np.array(Volume)
@@ -69,7 +70,10 @@ class PCSAFT(object):
         
         # PC-SAFT
         for i in range(len(xComp)):
-            B=xComp[i]*(nsegment[i]-1)*np.log(g_hs[i])
+            if isinstance(xComp[0], ufl.classes.Variable):
+                B=(nsegment[i]-1)*ufl.ln(g_hs[i])*xComp[i]
+            else:
+                B=(nsegment[i]-1)*np.log(g_hs[i])*xComp[i]
             result=result+B
         A=m_mean*a_hs-result
         
@@ -82,7 +86,7 @@ class PCSAFT(object):
         xComp=self.xComp
         nsegment=self.nsegment
         for i in range(len(xComp)):
-            B=xComp[i]*nsegment[i]
+            B=nsegment[i]*xComp[i]
             result=result+B
         return result
 
@@ -93,7 +97,11 @@ class PCSAFT(object):
         zeta3=self.zetan(3)
         
         # PC-SAFT
-        A=1/zeta0*((3*zeta1*zeta2)/(1-zeta3)+pow(zeta2,3)/(zeta3*pow((1-zeta3),2))+(pow(zeta2,3)/pow(zeta3,2)-zeta0)*np.log(1-zeta3))
+        xComp=self.xComp
+        if isinstance(xComp[0], ufl.classes.Variable):
+            A=1/zeta0*((3*zeta1*zeta2)/(1-zeta3)+zeta2**3/(zeta3*(1-zeta3)**2)+(zeta2**3)/zeta3**2)-zeta0*ufl.ln(1-zeta3)
+        else:
+            A=1/zeta0*((3*zeta1*zeta2)/(1-zeta3)+pow(zeta2,3)/(zeta3*pow((1-zeta3),2))+(pow(zeta2,3)/pow(zeta3,2)-zeta0)*np.log(1-zeta3))
         
         # sPC-SAFT
        #  A=(4*zeta3-3*pow(zeta3,2))/pow(1-zeta3,2)
@@ -103,15 +111,28 @@ class PCSAFT(object):
         zeta2=self.zetan(2)
         zeta3=self.zetan(3)
         HSd=self.HSd()
-        
+        xComp=self.xComp
         # PC-SAFT
         A=HSd
+        if isinstance(xComp[0], ufl.classes.Variable):
+            if len(HSd)==1:
+                A3=[0*xComp[0]]
+            elif len(HSd)==2:
+                A3=[0*xComp[0],0*xComp[0]]
+        else:
+            if len(HSd)==1:
+                A3=[0]
+            elif len(HSd)==2:
+                A3=[0,0]
         for i in range(len(HSd)):
-            A[i]=1/(1-zeta3)+pow(HSd[i],2)*3*zeta2/(2*HSd[i]*pow((1-zeta3),2))+pow(HSd[i],4)*2*pow(zeta2,2)/((pow(2*HSd[i],2))*pow((1-zeta3),3))
+            A2=1/(1-zeta3)+pow(HSd[i],2)*3*zeta2/(2*HSd[i]*pow((1-zeta3),2))+pow(HSd[i],4)*2*pow(zeta2,2)/((pow(2*HSd[i],2))*pow((1-zeta3),3))
+            if not(isinstance(A2, list)):
+                A2 = [A2]
+            A3[i]=A2[0]
         
         # sPC-SAFT
        #  A=(1-zeta3/2)/pow(1-zeta3,3)    
-        return A
+        return A3
 
  def zetan(self,m):
         result=0.
@@ -121,7 +142,7 @@ class PCSAFT(object):
         nsegment=self.nsegment
         xComp=self.xComp
         for i in range(len(xComp)):
-            result=xComp[i]*nsegment[i]*pow(HSd[i],m)+result
+            result=nsegment[i]*pow(HSd[i],m)*xComp[i]+result
         return pi*NParticles/(6*Vol)*result
 
  def HSd(self):
@@ -136,8 +157,8 @@ class PCSAFT(object):
         A=0
         B=0
         for i in range(len(xComp)):
-               A+=xComp[i]*nsegment[i]*pow(HSd[i],3)
-               B+=xComp[i]*nsegment[i]
+               A+=nsegment[i]*pow(HSd[i],3)*xComp[i]
+               B+=nsegment[i]*xComp[i]
         return pow(A/B,1/3)
 
     ##Dispersion Term
@@ -167,7 +188,7 @@ class PCSAFT(object):
         result=0.
         for i in range(len(xComp)):
             for j in range(len(xComp)):
-                result=xComp[i]*xComp[j]*nsegment[i]*nsegment[j]*pow((np.sqrt(epsilon[i]*epsilon[j])*(1-k[i,j]))/(Temp),m)*pow(0.5*(sigma[i]+sigma[j]),3)+result
+                result=nsegment[i]*nsegment[j]*pow((np.sqrt(epsilon[i]*epsilon[j])*(1-k[i,j]))/(Temp),m)*pow(0.5*(sigma[i]+sigma[j]),3)*xComp[i]*xComp[j]+result
         return result
 
  def I1(self):
@@ -181,9 +202,16 @@ class PCSAFT(object):
         result=0.
         m_mean=self.m_mean()
         pfrac=self.zetan(3)
-        a=np.array([0.,0.,0.,0.,0.,0.,0.])
+        xComp=self.xComp
+        if isinstance(self.xComp[0], ufl.classes.Variable):
+            a=np.array([0*xComp[0],0*xComp[0],0*xComp[0],0*xComp[0],0*xComp[0],0*xComp[0],0*xComp[0]])
+        else:
+            a=np.array([0.,0.,0.,0.,0.,0.,0.])
         for i in range(7):
-            a[i]=acorr[i,0]+(m_mean-1)/m_mean*acorr[i,1]+(m_mean-1)*(m_mean-2)/pow(m_mean,2)*acorr[i,2]
+            if isinstance(self.xComp[0], ufl.classes.Variable):
+                a[i]=acorr[i,0]+(m_mean-1)/m_mean*acorr[i,1]+(m_mean-1)*(m_mean-2)/m_mean**2*acorr[i,2]
+            else:
+                a[i]=acorr[i,0]+(m_mean-1)/m_mean*acorr[i,1]+(m_mean-1)*(m_mean-2)/pow(m_mean,2)*acorr[i,2]
             result=a[i]*pow(pfrac,i)+result
         return result
 
@@ -198,7 +226,11 @@ class PCSAFT(object):
         result=0.
         m_mean=self.m_mean()
         pfrac=self.zetan(3)
-        b=np.array([0.,0.,0.,0.,0.,0.,0.])
+        xComp=self.xComp
+        if isinstance(self.xComp[0], ufl.classes.Variable):
+            b=np.array([0*xComp[0],0*xComp[0],0*xComp[0],0*xComp[0],0*xComp[0],0*xComp[0],0*xComp[0]])
+        else:
+            b=np.array([0.,0.,0.,0.,0.,0.,0.])
         for i in range(7):
             b[i]=bcorr[i,0]+(m_mean-1)/m_mean*bcorr[i,1]+(m_mean-1)*(m_mean-2)/pow(m_mean,2)*bcorr[i,2]
             result=b[i]*pow(pfrac,i)+result
@@ -245,9 +277,20 @@ class PCSAFT(object):
     zeta2=self.zetan(2)
     zeta3=self.zetan(3)
     HSd=self.HSd()
+    xComp=self.xComp
     
     # PC-SAFT
-    A=HSd*0.
+    # A=HSd*0.
+    if isinstance(xComp[0], ufl.classes.Variable):
+        if len(HSd)==1:
+            A=[0*xComp[0]]
+        elif len(HSd)==2:
+            A=[0*xComp[0],0*xComp[0]]
+    else:
+        if len(HSd)==1:
+            A=[0]
+        elif len(HSd)==2:
+            A=[0,0]
     for i in range(len(HSd)):
         A[i]=zeta3/pow((1-zeta3),2)+HSd[i]/2*(3*zeta2/pow((1-zeta3),2)+6*zeta2*zeta3/pow((1-zeta3),3))+pow(HSd[i]/2,2)*(4*pow(zeta2,2)/pow((1-zeta3),3)+6*pow(zeta2,2)*zeta3/pow((1-zeta3),4))
     
@@ -278,7 +321,11 @@ class PCSAFT(object):
     result=0.
     m_mean=self.m_mean()
     pfrac=self.zetan(3)
-    a=np.array([0.,0.,0.,0.,0.,0.,0.])
+    xComp=self.xComp
+    if isinstance(self.xComp[0], ufl.classes.Variable):
+        a=np.array([0*xComp[0],0*xComp[0],0*xComp[0],0*xComp[0],0*xComp[0],0*xComp[0],0*xComp[0]])
+    else:
+        a=np.array([0.,0.,0.,0.,0.,0.,0.])
     for i in range(7):
         a[i]=acorr[i,0]+(m_mean-1)/m_mean*acorr[i,1]+(m_mean-1)*(m_mean-2)/pow(m_mean,2)*acorr[i,2]
         result=a[i]*(i+1)*pow(pfrac,i)+result
@@ -295,7 +342,11 @@ class PCSAFT(object):
     result=0.
     m_mean=self.m_mean()
     pfrac=self.zetan(3)
-    b=np.array([0.,0.,0.,0.,0.,0.,0.])
+    xComp=self.xComp
+    if isinstance(self.xComp[0], ufl.classes.Variable):
+        b=np.array([0*xComp[0],0*xComp[0],0*xComp[0],0*xComp[0],0*xComp[0],0*xComp[0],0*xComp[0]])
+    else:
+        b=np.array([0.,0.,0.,0.,0.,0.,0.])
     for i in range(7):
         b[i]=bcorr[i,0]+(m_mean-1)/m_mean*bcorr[i,1]+(m_mean-1)*(m_mean-2)/pow(m_mean,2)*bcorr[i,2]
         result=b[i]*(i+1)*pow(pfrac,i)+result
@@ -594,7 +645,7 @@ class  GibbsMixingPCSAFT(object):
     g_res=r.a_res()+r.Z()-1-np.log(r.Z())
     return g_res-tres+tideal
  def GibbsFreeMixing_CH(self,x):
-    xComp=np.array([x,1-x])
+    xComp=[x,1-x]
     Temp=self.Temp
     NParticles=self.NParticles
     nsegment=self.nsegment
@@ -607,14 +658,20 @@ class  GibbsMixingPCSAFT(object):
     tres=0.
     k_B=1.38064852e-23
     for i in range(len(xComp)):
-        tideal=xComp[i]*np.log(xComp[i])+tideal
+        tideal=xComp[i]*ufl.ln(xComp[i])+tideal
         r=PCSAFT([nsegment[i]],[Mr[i]],[epsilon[i]],[sigma[i]],NParticles,Temp,self.Vol_pure[i],[1.],[[0.]])
         a_res = r.a_res()
         Z_res = r.Z()-1
         tres=(a_res+Z_res-np.log(Z_res+1))*xComp[i]+tres
     Vol = np.polyval(self.Vol_coef,xComp[0])*xComp[0]*xComp[1]+self.Vol_pure[0]*xComp[0]+self.Vol_pure[1]*xComp[1]
+    print(type(Vol))
     r=PCSAFT(nsegment,Mr,epsilon,sigma,NParticles,Temp,Vol,xComp,k)
-    g_res=r.a_res()+r.Z()-1-np.log(r.Z())
+    Z = r.Z()
+    # if isinstance(xComp[0], ufl.classes.Variable):
+    #     g_res=r.a_res()+r.Z()-1-ufl.ln(r.Z())
+    # else:
+    #     g_res=r.a_res()+r.Z()-1-np.log(r.Z())
+    g_res=r.a_res()+Z[0]-1-ufl.ln(Z[0])
     return g_res-tres+tideal
 
  def dGibbsFreeMixing(self,x):
@@ -679,7 +736,7 @@ class GibbsMixingFH(object):
        xComp = [x,1-x]
        chi = self.chi
        Nmono=self.Nmono
-       return xComp[0]/Nmono[0]*np.log(xComp[0])+xComp[1]/Nmono[1]*np.log(xComp[1])+chi*xComp[0]*xComp[1]
+       return Nmono[0]*xComp[0]/ufl.ln(xComp[0])+1/Nmono[1]*xComp[1]*ufl.ln(xComp[1])+chi*xComp[0]*xComp[1]
  def dGibbsFreeMixing(self,x):
        chi = self.chi
        Nmono=self.Nmono

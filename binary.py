@@ -158,6 +158,16 @@ if GIBBS == "FH":
     r = ThermoMix("FH",["PB","PS"],[N_A,N_B])
     g = r.GibbsFreeMixing(x_a)
     print("full FH")
+if GIBBS == "UNIFAC":
+    #Flory-Huggins Expression
+    r = ThermoMix("FH",["PB","PS"],[N_A,N_B])
+    g = r.GibbsFreeMixing(x_a)
+    print("UNIFAC")
+if GIBBS == "PCSAFT":
+    #Flory-Huggins Expression
+    r = ThermoMix("PCSAFT",["PB","PS"],[N_A,N_B],CH="ON")
+    g = r.GibbsFreeMixing(x_a)[0]
+    print("PCSAFT")
 elif GIBBS == "TaylorApproxFullFH":
     g = taylorapprox_fullFH(N_A, N_B, chi_AB, x_a)
     print("full taylor approx of FH")
