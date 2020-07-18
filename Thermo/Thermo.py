@@ -674,17 +674,23 @@ class  GibbsMixingPCSAFT(object):
 class GibbsMixingFH(object):
  def __init__(self,Species,Length,Temp):
         self.Nmono=np.array(Length)
+        self.Species = Species
         self.chi = Hilderbrand[Species[0]][Species[1]]/Temp[0]
  def GibbsFreeMixing(self,x):
        xComp = [x,1-x]
        chi = self.chi
        Nmono=self.Nmono
-       return xComp[0]/Nmono[0]*np.log(xComp[0])+xComp[1]/Nmono[1]*np.log(xComp[1])+chi*xComp[0]*xComp[1]
+       Species = self.Species
+       vComp   = [Nmono[0]*V_mono[Species[0]]*xComp[0],Nmono[1]*V_mono[Species[1]]*xComp[1]]/(Nmono[0]*V_mono[Species[0]]*xComp[0]+Nmono[1]*V_mono[Species[1]]*xComp[1])
+       return np.sqrt(Nmono[1]*V_mono[Species[1]]*Nmono[0]*V_mono[Species[0]])*(vComp[0]/(Nmono[0]*V_mono[Species[0]])*np.log(vComp[0])+vComp[1]/(Nmono[1]*V_mono[Species[1]])*np.log(vComp[1])+chi*vComp[0]*vComp[1])
  def dGibbsFreeMixing(self,x):
        chi = self.chi
        Nmono=self.Nmono
        xComp = np.array([x,1-x])
-       return np.log(xComp[0])/Nmono[0]-np.log(xComp[1])/Nmono[1]+chi*(1-2*xComp[0])+1/Nmono[0]-1/Nmono[1]
+       Species = self.Species
+       vComp   = [Nmono[0]*V_mono[Species[0]]*xComp[0],Nmono[1]*V_mono[Species[1]]*xComp[1]]/(Nmono[0]*V_mono[Species[0]]*xComp[0]+Nmono[1]*V_mono[Species[1]]*xComp[1])
+       
+       return Nmono[0]*V_mono[Species[0]]*Nmono[1]*V_mono[Species[1]]/((Nmono[1]*V_mono[Species[1]]-Nmono[0]*V_mono[Species[0]])*xComp[0]-Nmono[1]*V_mono[Species[1]])**2*(np.log(vComp[0])/(Nmono[0]*V_mono[Species[0]])-np.log(vComp[1])/(Nmono[1]*V_mono[Species[1]])+chi*(1-2*vComp[0])/np.sqrt(V_mono[Species[1]]*V_mono[Species[0]])+1/(Nmono[0]*V_mono[Species[0]])-1/(Nmono[1]*V_mono[Species[1]]))
 
 class GibbsMixingUNIFAC(object):
  def __init__(self,Species,Length,Temp):
@@ -696,6 +702,7 @@ class GibbsMixingUNIFAC(object):
  def GibbsFreeMixing(self,x):
        ln_gamma      = self.ln_gamma(x)
        Temp          = self.Temp
+       vol           = self.volume()
        A = 0.
        xComp = [x,1-x]
        for i in range(len(xComp)):
@@ -1105,15 +1112,23 @@ SEGMENT = {
 }
 
 Binary_k = {
-"PMMA": {"PS":[-0.742158,-5.60327,1.0060222]},
-"PS": {"PMMA":[-5.60327,-0.742158,1.0060222],
+"PMMA": {"PS":[-0.0520561603441299,-5.12618157487088,1.00576583293560]},
+"PS": {"PMMA":[-5.12618157487088,-0.0520561603441299,1.00576583293560],
          "PB":[-3.503558,0.449938,1.0020467]},
 "PB": {  "PS":[0.449938,-3.503558,1.0020467]}
 }
 
 Hilderbrand = {
-       "PB":{"PS": 23.2446},
-       "PS":{"PB": 23.2446}
+       "PB":{"PS":  0.27062786*1e6},
+       "PS":{"PB":  0.27062786*1e6,
+             "PMMA":0.03006976*1e6},
+       "PMMA":{"PS":0.03006976*1e6}
+}
+
+V_mono = {
+       "PS":0.179*1e-27*6.02214086e23,
+       "PB":0.111*1e-27*6.02214086e23,
+       "PMMA":0.149*1e-27*6.02214086e23
 }
 
 CHI = {
