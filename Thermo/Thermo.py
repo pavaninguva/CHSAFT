@@ -1,7 +1,7 @@
 import autograd.numpy as np 
 from autograd import grad
 import copy
-from math import pi
+from math import pi,log
 from scipy.optimize import fsolve, least_squares
 
 class RK(object):
@@ -30,7 +30,7 @@ class RK(object):
 
  def G(self, x):
      P = self.P
-     return self.taylorapprox_logonlyFH(1,1,0,x)*x*(1-x)*sum([P[i]*(2*x-1)**i for i in range(len(P))])
+     return x*log(x)+(1-x)*log(1-x)+x*(1-x)*sum([P[i]*(2*x-1)**(len(P)-i-1) for i in range(len(P))])
 
  def taylorapprox_logonlyFH (self, N_1, N_2, chi, x):  # from Pavan
      combinatorial_1 = x*(2.0*x - 512.0*(x - 0.5)**10.0/5.0 + 512.0*(x - 1.0/2.0)**9.0/9.0 - 32.0*(x - 0.5)**8.0 + 128*(x - 0.5)**7.0/7.0 - 32.0*(x - 0.5)**6.0/3.0 + 32.0*(x - 0.5)**5.0/5.0 - 4.0*(x - 0.5)**4.0 + 8.0*(x - 0.5)**3.0/3.0 - 2.0*(x - 0.5)**2.0 - 1.0 - np.log(2.0)) / N_1
