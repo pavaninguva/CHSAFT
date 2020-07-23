@@ -4,6 +4,44 @@ import copy
 from math import pi
 from scipy.optimize import fsolve, least_squares
 
+class RK(object):
+ def __init__(self, method, species, length, temp=[298], pre=[1e5]):
+     self.method = method
+     self.species = species
+     self.length = length
+     self.temp = temp
+     self.pre = pre
+     self.P = self.RK()
+
+ def RK(self):
+     method = self.method
+     species = self.species
+     length = self.length
+     temp = self.temp
+     pre = self.pre
+     x_list = np.linspace(0.00001,0.99999,50)
+     x2_list = 2*x_list-1
+     Gres_list = []
+     prop = ThermoMix(method, species, length, temp, pre)
+     for i in range(len(x_list)):
+         Gres_list.append((prop.GibbsFreeMixing(x_list[i])[0] - x_list[i]*np.log(x_list[i]) - (1-x_list[i])*np.log(1-x_list[i]))/x_list[i]/(1-x_list[i]))
+     P = np.polyfit(x2_list, Gres_list, 6)
+     return P
+
+ def G(self, x):
+     P = self.P
+     return self.taylorapprox_logonlyFH(1,1,0,x)*x*(1-x)*sum([P[i]*(2*x-1)**i for i in range(len(P))])
+
+ def taylorapprox_logonlyFH (self, N_1, N_2, chi, x):  # from Pavan
+     combinatorial_1 = x*(2.0*x - 512.0*(x - 0.5)**10.0/5.0 + 512.0*(x - 1.0/2.0)**9.0/9.0 - 32.0*(x - 0.5)**8.0 + 128*(x - 0.5)**7.0/7.0 - 32.0*(x - 0.5)**6.0/3.0 + 32.0*(x - 0.5)**5.0/5.0 - 4.0*(x - 0.5)**4.0 + 8.0*(x - 0.5)**3.0/3.0 - 2.0*(x - 0.5)**2.0 - 1.0 - np.log(2.0)) / N_1
+ 
+     combinatorial_2 = (1.0 - x)*(-2.0*x - 512.0*(x - 0.5)**10.0/5.0 - 512.0*(x - 0.5)**9.0/9.0 - 32.0*(x - 0.5)**8.0 - 128.0*(x - 0.5)**7.0/7.0 - 32.0*(x - 0.5)**6.0/3.0 - 32.0*(x - 0.5)**5.0/5.0 - 4.0*(x - 0.5)**4.0 - 8.0*(x - 0.5)**3.0/3.0 - 2.0*(x - 0.5)**2.0 - np.log(2) + 1)/ N_2
+ 
+     residual = x*(1.0-x)*chi
+ 
+     f = combinatorial_1 + combinatorial_2 + residual
+
+     return f
 
 class ThermoMix(object):
  def __init__(self,Method,Species,Length,Temp=[298],Pre=[1e5],k=None,CH="Off"):
