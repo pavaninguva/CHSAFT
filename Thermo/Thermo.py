@@ -1,7 +1,7 @@
 import autograd.numpy as np 
 from autograd import grad
 import copy
-from math import pi
+from math import pi,log
 from scipy.optimize import fsolve, least_squares
 
 class RK(object):
