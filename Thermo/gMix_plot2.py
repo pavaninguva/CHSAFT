@@ -1,4 +1,5 @@
 from Thermo import RK, ThermoMix
+from FHTaylor import taylorapprox_logonlyFH
 from LLESolver import LLESolvers
 import matplotlib.pyplot as plt
 import numpy as np
@@ -8,16 +9,21 @@ Length = [50,50]
 Species = ["PB","PS"]
 Temp = 298
 
-gMix_FH = []
-gMix_UNIFAC = []
+# gMix_FH = []
+# gMix_UNIFAC = []
 gMix_SAFT = []
-gMix_SAFT_CH = []
+# gMix_SAFT_CH = []
 gMix_RK_SAFT = []
+gMix_RK_UNIFAC = []
+gMix_RK_FH = []
+gMix_PAVAN = []
 # FH  = ThermoMix("FH",Species,Length,[Temp])
 # UNIFAC  = ThermoMix("UNIFAC",Species,Length,[Temp])
 SAFT  = ThermoMix("PCSAFT",Species,Length,[Temp])
 # SAFT_CH = ThermoMix("PCSAFT",Species,Length,[Temp],CH="On",k=0.000720986)
 RK_SAFT = RK("PCSAFT",Species,Length,[Temp])
+RK_UNIFAC = RK("UNIFAC",Species,Length,[Temp])
+RK_FH = RK("FH",Species,Length,[Temp])
 for i in range(len(xComp)):
     
     # gMix_FH.append(FH.GibbsFreeMixing(xComp[i]))
@@ -26,7 +32,12 @@ for i in range(len(xComp)):
     # gMix_UNIFAC.append(UNIFAC.GibbsFreeMixing(xComp[i]))
 
     gMix_SAFT.append(SAFT.GibbsFreeMixing(xComp[i]))
-    gMix_RK_SAFT.append(RK_SAFT.G(xComp[i]))
+    gMix_RK_SAFT.append(RK_SAFT.G_RK(xComp[i]))
+    gMix_RK_UNIFAC.append(RK_UNIFAC.G_RK(xComp[i]))
+    gMix_RK_FH.append(RK_FH.G_RK(xComp[i]))
+    gMix_PAVAN.append(taylorapprox_logonlyFH(Length[0],Length[1], 0.0064, xComp[i]))
+    # print(gMix_PAVAN[i], gMix_RK_FH[i])
+    # print(gMix_RK_FH)
 
     # gMix_SAFT_CH.append(SAFT_CH.GibbsFreeMixing(xComp[i]))
 
@@ -49,8 +60,11 @@ for direction in ["top"]:
     ax.spines[direction].set_color('none')
 ax.xaxis.set_ticks_position('bottom')
 ax.yaxis.set_ticks_position('left')
-ax.plot(xComp,gMix_SAFT,color='k', ls='solid',label=r"PC-SAFT")
-ax.plot(xComp,gMix_RK_SAFT,color='r', ls='solid',label=r"RK")
+# ax.plot(xComp,gMix_SAFT,color='k', ls='solid',label=r"PC-SAFT")
+ax.plot(xComp,gMix_RK_SAFT,color='r', ls='solid',label=r"RK-SAFT")
+ax.plot(xComp,gMix_RK_UNIFAC,color='b', ls='solid',label=r"RK-UNIFAC")
+ax.plot(xComp,gMix_RK_FH,color='g', ls='solid',label=r"RK-FH")
+ax.plot(xComp,gMix_PAVAN,color='m', ls='solid',label=r"PAVAN")
 # ax.plot(xComp,gMix_UNIFAC,color='0.50', ls='dashed',label=r"UNIFAC")
 # ax.plot(xComp,gMix_FH,color='k', ls='dotted',label=r"Flory-Huggins")
 # ax.plot([0,1],[-0.099,-0.099],color='k', ls='solid', linewidth=0.55,label=r"\textit{s}PC-SAFT")

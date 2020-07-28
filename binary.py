@@ -8,7 +8,7 @@ import os
 import time
 import sys
 from FHTaylor import taylorapprox_fullFH, taylorapprox_logonlyFH
-from Thermo.Thermo import ThermoMix
+from Thermo.Thermo import RK, ThermoMix
 from parameters.params import (
     A_RAW,
     NOISE_MAGNITUDE,
@@ -154,10 +154,17 @@ elif SIZE_DISPARITY == "LARGE":
 
 
 if GIBBS == "FH":
-    #Flory-Huggins Expression
-    r = ThermoMix("FH",["PB","PS"],[N_A,N_B])
-    g = r.GibbsFreeMixing(x_a)
-    print("full FH")
+    r = RK("FH",["PB","PS"],[N_A,N_B])
+    g = r.G_RK(x_a)
+    print("Redlich-Kister FH")
+if GIBBS == "UNIFAC":
+    r = RK("UNIFAC",["PB","PS"],[N_A,N_B])
+    g = r.G_RK(x_a)
+    print("Redlich-Kister UNIFAC")
+if GIBBS == "PCSAFT":
+    r = RK("PCSAFT",["PB","PS"],[N_A,N_B])
+    g = r.G_RK(x_a)[0]
+    print("Redlich-Kister PCSAFT")
 elif GIBBS == "TaylorApproxFullFH":
     g = taylorapprox_fullFH(N_A, N_B, chi_AB, x_a)
     print("full taylor approx of FH")

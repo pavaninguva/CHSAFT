@@ -12,25 +12,53 @@ class RK(object):
      self.temp = temp
      self.pre = pre
      self.P = self.RK()
+     # self.P2 = self.poly()
 
  def RK(self):
      method = self.method
      species = self.species
-     length = self.length
+     Nmono = self.length
      temp = self.temp
      pre = self.pre
      x_list = np.linspace(0.00001,0.99999,50)
      x2_list = 2*x_list-1
      Gres_list = []
-     prop = ThermoMix(method, species, length, temp, pre)
+     prop = ThermoMix(method, species, Nmono, temp, pre)
      for i in range(len(x_list)):
-         Gres_list.append((prop.GibbsFreeMixing(x_list[i])[0] - x_list[i]*np.log(x_list[i]) - (1-x_list[i])*np.log(1-x_list[i]))/x_list[i]/(1-x_list[i]))
+         if method == "FH":
+             Gres_list.append((prop.GibbsFreeMixing(x_list[i]) - x_list[i]/Nmono[0]/V_mono[self.species[0]]*np.log(x_list[i]) - (1-x_list[i])/Nmono[1]/V_mono[self.species[1]]*np.log(1-x_list[i]))/x_list[i]/(1-x_list[i]))
+         else:
+             Gres_list.append((prop.GibbsFreeMixing(x_list[i]) - x_list[i]*np.log(x_list[i]) - (1-x_list[i])*np.log(1-x_list[i]))/x_list[i]/(1-x_list[i]))
      P = np.polyfit(x2_list, Gres_list, 6)
      return P
 
- def G(self, x):
+ # def poly(self):
+ #     method = self.method
+ #     species = self.species
+ #     length = self.length
+ #     temp = self.temp
+ #     pre = self.pre
+ #     x_list = np.linspace(0.00001,0.99999,50)
+ #     Gres_list = []
+ #     prop = ThermoMix(method, species, length, temp, pre)
+ #     for i in range(len(x_list)):
+ #         Gres_list.append((prop.GibbsFreeMixing(x_list[i]) - x_list[i]*np.log(x_list[i]) - (1-x_list[i])*np.log(1-x_list[i])))
+ #     P = np.polyfit(x_list, Gres_list, 6)
+ #     return P
+
+ def G_RK(self, v):
      P = self.P
-     return self.taylorapprox_logonlyFH(1,1,0,x)*x*(1-x)*sum([P[i]*(2*x-1)**i for i in range(len(P))])
+     if self.method == "FH":
+         x = v
+         # return (self.taylorapprox_logonlyFH(self.length[0],self.length[1],0.0064,x))
+         return np.sqrt(V_mono[self.species[1]]*V_mono[self.species[0]])*(self.taylorapprox_logonlyFH(self.length[0]*V_mono[self.species[0]],self.length[1]*V_mono[self.species[1]],0,x)+x*(1-x)*sum([P[::-1][i]*(2*x-1)**i for i in range(len(P))]))
+     else:
+         x = v*self.length[1]*V_mono[self.species[1]]/((1-v)*self.length[0]*V_mono[self.species[0]]+v*self.length[1]*V_mono[self.species[1]])
+         return 1/np.sqrt(self.length[0]*self.length[1])*(self.taylorapprox_logonlyFH(1,1,0,x)+x*(1-x)*sum([P[::-1][i]*(2*x-1)**i for i in range(len(P))]))
+
+ # def G_poly(self, x):
+ #     P = self.P2
+ #     return self.taylorapprox_logonlyFH(self.length[0],self.length[1],0,x)+sum([P[::-1][i]*(x)**i for i in range(len(P))])
 
  def taylorapprox_logonlyFH (self, N_1, N_2, chi, x):  # from Pavan
      combinatorial_1 = x*(2.0*x - 512.0*(x - 0.5)**10.0/5.0 + 512.0*(x - 1.0/2.0)**9.0/9.0 - 32.0*(x - 0.5)**8.0 + 128*(x - 0.5)**7.0/7.0 - 32.0*(x - 0.5)**6.0/3.0 + 32.0*(x - 0.5)**5.0/5.0 - 4.0*(x - 0.5)**4.0 + 8.0*(x - 0.5)**3.0/3.0 - 2.0*(x - 0.5)**2.0 - 1.0 - np.log(2.0)) / N_1
@@ -719,8 +747,9 @@ class GibbsMixingFH(object):
        chi = self.chi
        Nmono=self.Nmono
        Species = self.Species
-       vComp   = [Nmono[0]*V_mono[Species[0]]*xComp[0],Nmono[1]*V_mono[Species[1]]*xComp[1]]/(Nmono[0]*V_mono[Species[0]]*xComp[0]+Nmono[1]*V_mono[Species[1]]*xComp[1])
-       return np.sqrt(Nmono[1]*V_mono[Species[1]]*Nmono[0]*V_mono[Species[0]])*(vComp[0]/(Nmono[0]*V_mono[Species[0]])*np.log(vComp[0])+vComp[1]/(Nmono[1]*V_mono[Species[1]])*np.log(vComp[1])+chi*vComp[0]*vComp[1])
+       vComp = xComp
+       return vComp[0]/(Nmono[0]*V_mono[Species[0]])*np.log(vComp[0])+vComp[1]/(Nmono[1]*V_mono[Species[1]])*np.log(vComp[1])+chi*vComp[0]*vComp[1]
+
  def dGibbsFreeMixing(self,x):
        chi = self.chi
        Nmono=self.Nmono
