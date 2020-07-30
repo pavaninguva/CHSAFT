@@ -4,7 +4,7 @@ A_RAW: 0.789
 
 # Thermo model
 # Options for GIBBS are: "FH", "UNIFAC", "PCSAFT", "TaylorApproxFullFH", "TaylorApproxLogOnlyFH"
-GIBBS: UNIFAC
+GIBBS: "PCSAFT"
 
 # Options for SIZE_DISPARITY are: "SMALL", "LARGE"
 SIZE_DISPARITY: SMALL
@@ -17,12 +17,12 @@ MATERIAL_CHOICE: Validation
 
 #Numerics
 NOISE_MAGNITUDE: 0.01
-TIME_MAX: 100
-DT: 2.0
-N_CELLS: 5
-DOMAIN_LENGTH: 5
+TIME_MAX: 10000
+DT: 2
+N_CELLS: 20
+DOMAIN_LENGTH: 20
 theta_ch: 1
-TIME_STRIDE: 100
+TIME_STRIDE: 1
 MESH_TYPE: structured
 FINITE_ELEMENT: CG
 FINITE_ELEMENT_ORDER: 1
@@ -49,6 +49,6 @@ DESIRED_RESIDUAL: 0.1
 
 # Validation
 ## FH
-chi_AB_Validation: 0.0064
-N_A_Validation: 2690
-N_B_Validation: 3500
+chi_AB_Validation: 0.04
+N_A_Validation: 50
+N_B_Validation: 50

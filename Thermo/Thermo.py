@@ -1,6 +1,7 @@
 import autograd.numpy as np 
 from autograd import grad
 import copy
+from dolfin import ln
 from math import pi,log
 from scipy.optimize import fsolve, least_squares
 
@@ -20,15 +21,13 @@ class RK(object):
      Nmono = self.length
      temp = self.temp
      pre = self.pre
-     x_list = np.linspace(0.00001,0.99999,50)
+     x_list = np.linspace(0.00001,0.99999,100)
      x2_list = 2*x_list-1
      Gres_list = []
      prop = ThermoMix(method, species, Nmono, temp, pre)
      for i in range(len(x_list)):
-         if method == "FH":
-             Gres_list.append((prop.GibbsFreeMixing(x_list[i]) - x_list[i]/Nmono[0]/V_mono[self.species[0]]*np.log(x_list[i]) - (1-x_list[i])/Nmono[1]/V_mono[self.species[1]]*np.log(1-x_list[i]))/x_list[i]/(1-x_list[i]))
-         else:
-             Gres_list.append((prop.GibbsFreeMixing(x_list[i]) - x_list[i]*np.log(x_list[i]) - (1-x_list[i])*np.log(1-x_list[i]))/x_list[i]/(1-x_list[i]))
+              Gres_list.append((prop.GibbsFreeMixing(x_list[i]) - x_list[i]*np.log(x_list[i]) - (1-x_list[i])*np.log(1-x_list[i]))/x_list[i]/(1-x_list[i]))
+#      print(Gres_list)
      P = np.polyfit(x2_list, Gres_list, 6)
      return P
 
@@ -48,13 +47,10 @@ class RK(object):
 
  def G_RK(self, v):
      P = self.P
-     if self.method == "FH":
-         x = v
-         # return (self.taylorapprox_logonlyFH(self.length[0],self.length[1],0.0064,x))
-         return np.sqrt(V_mono[self.species[1]]*V_mono[self.species[0]])*(self.taylorapprox_logonlyFH(self.length[0]*V_mono[self.species[0]],self.length[1]*V_mono[self.species[1]],0,x)+x*(1-x)*sum([P[::-1][i]*(2*x-1)**i for i in range(len(P))]))
-     else:
-         x = v*self.length[1]*V_mono[self.species[1]]/((1-v)*self.length[0]*V_mono[self.species[0]]+v*self.length[1]*V_mono[self.species[1]])
-         return 1/np.sqrt(self.length[0]*self.length[1])*(self.taylorapprox_logonlyFH(1,1,0,x)+x*(1-x)*sum([P[::-1][i]*(2*x-1)**i for i in range(len(P))]))
+     x = v*self.length[1]*V_mono[self.species[1]]/((1-v)*self.length[0]*V_mono[self.species[0]]+v*self.length[1]*V_mono[self.species[1]])
+#      x = v
+     return 1/np.sqrt(self.length[0]*self.length[1])*(x*ln(x)+(1.0-x)*ln(1.0-x)+x*(1-x)*sum([P[::-1][i]*(2*x-1)**i for i in range(len(P))]))
+#      return (x*np.log(x)+(1.0-x)*np.log(1.0-x)+x*(1-x)*sum([P[::-1][i]*(2*x-1)**i for i in range(len(P))]))
 
  # def G_poly(self, x):
  #     P = self.P2
@@ -747,8 +743,8 @@ class GibbsMixingFH(object):
        chi = self.chi
        Nmono=self.Nmono
        Species = self.Species
-       vComp = xComp
-       return vComp[0]/(Nmono[0]*V_mono[Species[0]])*np.log(vComp[0])+vComp[1]/(Nmono[1]*V_mono[Species[1]])*np.log(vComp[1])+chi*vComp[0]*vComp[1]
+       vComp = [xComp[0]*Nmono[0]*V_mono[Species[0]]/(xComp[0]*Nmono[0]*V_mono[Species[0]]+xComp[1]*Nmono[1]*V_mono[Species[1]]),xComp[1]*Nmono[1]*V_mono[Species[1]]/(xComp[0]*Nmono[0]*V_mono[Species[0]]+xComp[1]*Nmono[1]*V_mono[Species[1]])]
+       return np.sqrt(Nmono[0]*V_mono[Species[0]]*V_mono[Species[1]]*Nmono[1])*(vComp[0]/(Nmono[0]*V_mono[Species[0]])*np.log(vComp[0])+vComp[1]/(Nmono[1]*V_mono[Species[1]])*np.log(vComp[1])+chi*vComp[0]*vComp[1])
 
  def dGibbsFreeMixing(self,x):
        chi = self.chi
