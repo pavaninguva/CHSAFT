@@ -19,6 +19,7 @@ from parameters.params import (
     theta_ch,
     MESH_TYPE,
     TIME_STRIDE,
+    SPECIES,
     chi_AB,
     N_A,
     N_B,
@@ -154,16 +155,16 @@ elif SIZE_DISPARITY == "LARGE":
 
 
 if GIBBS == "FH":
-    r = RK("FH",["PB","PS"],[N_A,N_B])
-    # g = ( x_a * ln(x_a) )/N_A + ((1.0-x_a)*ln(1-x_a)/ N_B) + x_a*(1.0-x_a)*chi_AB 
-    g = r.G_RK(x_a)
+    # r = RK("FH",["PB","PS"],[N_A,N_B])
+    g = ( x_a * ln(x_a) )/N_A*0.787 + ((1.0-x_a)*ln(1-x_a)/ N_B)*1.270 + x_a*(1.0-x_a)*chi_AB 
+    # g = r.G_RK(x_a)
     print("Redlich-Kister FH")
 if GIBBS == "UNIFAC":
-    r = RK("UNIFAC",["PB","PS"],[N_A,N_B])
+    r = RK("UNIFAC",SPECIES,[N_A,N_B])
     g = r.G_RK(x_a)
     print("Redlich-Kister UNIFAC")
 if GIBBS == "PCSAFT":
-    r = RK("PCSAFT",["PB","PS"],[N_A,N_B])
+    r = RK("PCSAFT",SPECIES,[N_A,N_B])
     g = r.G_RK(x_a)[0]
     print("Redlich-Kister PCSAFT")
 elif GIBBS == "TaylorApproxFullFH":

@@ -12,43 +12,23 @@ SIZE_DISPARITY: SMALL
 # Mobility model
 MOBILITY_MODEL: Constant
 
+# Conditions
+TEMPERATURE: 298.15
+
 # Materials
-MATERIAL_CHOICE: Validation
+MATERIAL_CHOICE: ["PB","PS"]
+N_A: 50
+N_B: 50
 
 #Numerics
 NOISE_MAGNITUDE: 0.01
-TIME_MAX: 10000
-DT: 2
+TIME_MAX: 1000
+DT: 1
 N_CELLS: 20
-DOMAIN_LENGTH: 20
+DOMAIN_LENGTH: 10
 theta_ch: 1
-TIME_STRIDE: 1
+TIME_STRIDE: 10
 MESH_TYPE: structured
 FINITE_ELEMENT: CG
 FINITE_ELEMENT_ORDER: 1
 SOLVER_CONFIG: LU
-
-
-# PS_PMMA
-## FH
-chi_AB_PS_PMMA: 0.004
-N_A_PS_PMMA: 2690
-N_B_PS_PMMA: 4000
-
-## PC_SAFT
-
-
-# PS_PB
-## FH
-chi_AB_PS_PB: 0.08
-N_A_PS_PB: 2690
-N_B_PS_PB: 7780
-
-# Sweeping Residual
-DESIRED_RESIDUAL: 0.1
-
-# Validation
-## FH
-chi_AB_Validation: 0.04
-N_A_Validation: 50
-N_B_Validation: 50
