@@ -145,13 +145,6 @@ ch_init = InitialConditions(degree=1)
 ch.interpolate(ch_init)
 ch0.interpolate(ch_init)
 
-if SIZE_DISPARITY == "SMALL":
-    kappa = (2.0/3.0)*chi_AB
-    print ("about the same size")
-elif SIZE_DISPARITY == "LARGE": 
-    kappa = (1.0/3.0)*chi_AB
-    print ("big size difference")
-
 
 
 if GIBBS == "FH":
@@ -175,6 +168,22 @@ elif GIBBS == "TaylorApproxLogOnlyFH":
     print ("Taylor approx of log term in FH only")
 else: 
     print ("work harder")
+
+if SIZE_DISPARITY == "SMALL":
+    if GIBBS=="FH":
+        kappa = (2.0/3.0)*chi_AB
+    else:
+        chi_AB = r.RK(0)[0]/(N_A*N_B)**0.5
+        kappa = (2.0/3.0)*chi_AB[0]
+    print ("about the same size")
+elif SIZE_DISPARITY == "LARGE": 
+    if GIBBS=="FH":
+        kappa = (1.0/3.0)*chi_AB
+    else:
+        chi_AB = r.RK(0)[0]/(N_A*N_B)**0.5
+        kappa = (1.0/3.0)*chi_AB[0]
+    print ("big size difference")
+print(kappa)
 
 # Using the fenics autodifferentiation toolkit 
 dgdx_a = diff(g,x_a)

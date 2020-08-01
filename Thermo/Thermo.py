@@ -12,10 +12,10 @@ class RK(object):
      self.length = length
      self.temp = temp
      self.pre = pre
-     self.P = self.RK()
+     self.P = self.RK(6)
      # self.P2 = self.poly()
 
- def RK(self):
+ def RK(self,n):
      method = self.method
      species = self.species
      Nmono = self.length
@@ -28,7 +28,7 @@ class RK(object):
      for i in range(len(x_list)):
               Gres_list.append((prop.GibbsFreeMixing(x_list[i]) - x_list[i]*np.log(x_list[i]) - (1-x_list[i])*np.log(1-x_list[i]))/x_list[i]/(1-x_list[i]))
 #      print(Gres_list)
-     P = np.polyfit(x2_list, Gres_list, 6)
+     P = np.polyfit(x2_list, Gres_list, n)
      return P
 
  # def poly(self):
