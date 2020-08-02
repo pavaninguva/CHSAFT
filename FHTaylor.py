@@ -6,6 +6,8 @@ from sympy import *
 
 import math
 
+# from scipy.optimize import curve_fit
+
 
 """
 This section is for doing the full Taylor approximation for the FH equation
@@ -183,7 +185,7 @@ g2 = log(1-x)
 # We need to find a way to slot a "Rational" into this declaration to enable the output to be nice workable fractions.
 series = g2.series(x, Rational(1/2), 11).removeO()
 
-print (series)
+# print (series)
 
 def taylorapprox_logonlyFH (N_1, N_2, chi, x):
     combinatorial_1 = x*(2.0*x - 512.0*(x - 0.5)**10.0/5.0 + 512.0*(x - 1.0/2.0)**9.0/9.0 - 32.0*(x - 0.5)**8.0 + 128*(x - 0.5)**7.0/7.0 - 32.0*(x - 0.5)**6.0/3.0 + 32.0*(x - 0.5)**5.0/5.0 - 4.0*(x - 0.5)**4.0 + 8.0*(x - 0.5)**3.0/3.0 - 2.0*(x - 0.5)**2.0 - 1.0 - np.log(2.0)) / N_1
@@ -198,22 +200,75 @@ def taylorapprox_logonlyFH (N_1, N_2, chi, x):
 
 
 
+def polynomialfit_fullFH (N_1, N_2, chi, x, order):
+
+    # Define a linspace between 0.0 - 1.0: 
+    var = np.linspace(1e-10, (1.0-(1e-10)), 2000)
+
+    g_list = []
+    for mol in var:
+        g = fhfull(N_1, N_2, chi, mol)
+        g_list.append(g)
+    
+    f = np.poly1d(np.polyfit(var, g_list, order))
+
+    f_x = f(x)
+
+    return f_x
+
+def symquarticdoublewell (x, A):
+    g = A * (x**2.0) * (1.0- x)**2.0       
+    return g
+
+def heatofmixing (chi, x):
+    g = x *(1.0 - x)* chi
+
+    return g
+
+# def symquarticdoublewell_fullFH (N_1, N_2, chi, x):
+
+#     # Define a linspace between 0.0 - 1.0: 
+#     var = np.linspace(1e-10, (1.0-(1e-10)), 2000)
+
+#     g_list = []
+#     for mol in var:
+#         g = fhfull(N_1, N_2, chi, mol)
+#         g_list.append(g)
+
+#     popt, pcov = curve_fit(symquarticdoublewell, var, g_list)
+
+#     f = popt[0] * (x**2.0) * (1.0 -x)**2.0  
+
+#     return f, popt[0]
+
+
+# a, b = symquarticdoublewell_fullFH (2960, 3500, 0.0064, 0.5)
+
+# print (b)
+
+
+    
+     
+                    
+
+# print(symquarticdoublewell_fullFH(500, 500, 0.006, 0.4))
 
 # fig, ax = plt.subplots()
 
 
 # fhlist = []
 # approxlist = []
-# x_a = np.linspace(1e-10, 1.0, 1000)
+# x_a = np.linspace(0, 1.0, 1000)
 
 # for i in x_a:
-#     fh = fhfull(2690, 3500, 0.0064, i)
-#     approx = taylorapprox_logonlyFH(2690, 3500, 0.0064, i)
+#     fh = fhfull(500, 5000, 0.0064, i)
+#     approx = symquarticdoublewell_fullFH(500, 5000, 0.0064, i)
 #     fhlist.append(fh)
 #     approxlist.append(approx)
 
-# ax.plot(x_a, fhlist)
-# ax.plot(x_a, approxlist)
+# ax.plot(x_a, fhlist, label="analytical")
+# ax.plot(x_a, approxlist, label="approx")
+# ax.legend()
 
 
 # plt.show()

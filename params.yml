@@ -1,10 +1,12 @@
 #
 # Mole fraction of A
-A_RAW: 0.789
+A_RAW: 0.5
 
 # Thermo model
+
 # Options for GIBBS are: "FH", "UNIFAC", "PCSAFT", "TaylorApproxFullFH", "TaylorApproxLogOnlyFH"
 GIBBS: "PCSAFT"
+
 
 # Options for SIZE_DISPARITY are: "SMALL", "LARGE"
 SIZE_DISPARITY: SMALL
@@ -16,6 +18,7 @@ MOBILITY_MODEL: Constant
 TEMPERATURE: 298.15
 
 # Materials
+
 MATERIAL_CHOICE: ["PB","PS"]
 N_A: 50
 N_B: 50
