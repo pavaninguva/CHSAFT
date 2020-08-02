@@ -35,24 +35,22 @@ FINITE_ELEMENT_ORDER = params_dict["FINITE_ELEMENT_ORDER"]
 SOLVER_CONFIG = params_dict["SOLVER_CONFIG"]
 
 # Logic for material interaction parameters
-if MATERIAL_CHOICE == "PS_PMMA":
-    chi_AB = params_dict["chi_AB_PS_PMMA"]
-    N_A = params_dict["N_A_PS_PMMA"]
-    N_B = params_dict["N_B_PS_PMMA"]
-    # Insert other declarations  
-elif MATERIAL_CHOICE == "PS_PB":
-    chi_AB = params_dict["chi_AB_PS_PB"]
-    N_A = params_dict["N_A_PS_PB"]
-    N_B = params_dict["N_B_PS_PB"]
-    # Insert other declarations 
-elif MATERIAL_CHOICE == "Vashistha94":
-    chi_AB = params_dict["chi_AB_Vashistha"]
-    N_A = params_dict["N_A_Vashistha"]
-    N_B = params_dict["N_B_Vashistha"]
-    A_SYM = params_dict["A_SYM_Vashistha"]
-elif MATERIAL_CHOICE == "He97":
-    chi_AB = params_dict["chi_AB_He"]
-    N_A = params_dict["N_A_He"]
-    N_B = params_dict["N_B_He"]
-    A_SYM = params_dict["A_SYM_He"]
-    # Insert other declarations 
+Hilderbrand = {
+       "PB":{"PS":  0.27062786*1e6},
+       "PS":{"PB":  0.27062786*1e6,
+             "PMMA":0.03006976*1e6},
+       "PMMA":{"PS":0.03006976*1e6}
+}
+
+V_mono = {
+       "PS":0.179*1e-27*6.02214086e23,
+       "PB":0.111*1e-27*6.02214086e23,
+       "PMMA":0.149*1e-27*6.02214086e23
+}
+
+SPECIES = params_dict["MATERIAL_CHOICE"]
+chi_AB = Hilderbrand[SPECIES[0]][SPECIES[1]]*(V_mono[SPECIES[0]]*V_mono[SPECIES[1]])**0.5/params_dict["TEMPERATURE"]
+N_A = params_dict["N_A"]
+N_B = params_dict["N_B"]
+# Insert other declarations 
+

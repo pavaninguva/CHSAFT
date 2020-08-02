@@ -68,7 +68,7 @@ class PCSAFT(object):
         result=0.
         HSd=self.HSd()
         Vol=self.Vol
-        NParticles=6.02e23
+        NParticles=self.NParticles
         nsegment=self.nsegment
         xComp=self.xComp
         for i in range(len(xComp)):
@@ -148,7 +148,7 @@ class PCSAFT(object):
         return result
  ## Compressibility Factor ##
  def Z(self):
-    Z_HC=self.Z_HS()
+    Z_HC=self.Z_HC()
     Z_Disp=self.Z_Disp()
     return 1+Z_HC+Z_Disp
 
@@ -205,7 +205,7 @@ class PCSAFT(object):
     m_mean=self.m_mean()
     pfrac=self.zetan(3)
     a=np.array([0.,0.,0.,0.,0.,0.,0.])
-    for i in range(6):
+    for i in range(7):
         a[i]=acorr[i,0]+(m_mean-1)/m_mean*acorr[i,1]+(m_mean-1)*(m_mean-2)/pow(m_mean,2)*acorr[i,2]
         result=a[i]*(i+1)*pow(pfrac,i)+result
     return result

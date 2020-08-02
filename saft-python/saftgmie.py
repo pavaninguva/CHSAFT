@@ -740,7 +740,7 @@ class System(object):
         t22 = segden*derxix
         t23 = 1 + 2 * xix + 3 * xix * (1+xix) / (1-xix) 
         t2 = 9/2 * (t21 + t22 * t23)
-
+        
         result = fac * (t1 * mt.intI(x0ii,lam) - t2 * mt.intJ(x0ii,lam))
         return result
 
@@ -752,7 +752,6 @@ class System(object):
 
         tatt = self.__der_as1kl(gcomp, att) + self.__der_bkl(gcomp, att)
         trep = self.__der_as1kl(gcomp, rep) + self.__der_bkl(gcomp, rep)
-
         result = ckl * (pow(x0ii, att) * tatt - pow(x0ii, rep) * trep)
         return result
 
@@ -770,7 +769,6 @@ class System(object):
     def __gdhs(self, gcomp):
         xi_x = self.__xi_x()
         x0ii = gcomp.x0kl(self.temp)
-
         result = mt.gdhs(x0ii, xi_x)
         return result
 
@@ -791,7 +789,6 @@ class System(object):
         t1 = 3* self.__der_a1kl(gcomp)
         t2 = premie * att * pow(x0ii, att) * (self.__as1kl(gcomp,att) + self.__bkl(gcomp,att)) / segden
         t3 = premie * rep * pow(x0ii, rep) * (self.__as1kl(gcomp,rep) + self.__bkl(gcomp,rep)) / segden
-
         result = 1 / (2 * pi * epsi * pow(hsd,3)) * (t1 - t2 + t3)
 
         return result
@@ -1074,6 +1071,13 @@ def main():
     methane = Component(16.04)
     methane.quick_set((ch4,1))
 
+    ch3 = GroupType(15.0498, 6., 0.408, 256.7662)
+    ch2 = GroupType(19.8711, 6., 0.488, 473.3893)
+
+    chc = GroupType(20.836,6.0,0.47852,477.36,shape_factor=0.24751,id_seg=1)
+    cyclohexane = Component(84.16)
+    cyclohexane.quick_set((chc,6))
+    
     to = GroupType(11.79626055, 6., 0.368461, 268.2422859)
     toluene = Component(92.14)
     toluene.quick_set((to,3))
@@ -1083,7 +1087,7 @@ def main():
 
     s = System()
     # s.quick_set([meth, ljmol], [100, 100])
-    s.quick_set((hexane,1000)) 
+    s.quick_set((cyclohexane,1)) 
     # print(s.comps, s.moles)
     # print(lj.hsdiam(273), ch.hsdiam(273))
 
@@ -1091,27 +1095,36 @@ def main():
     # print(octane.param_ii("sigma"), octane.param_ii("hsd",273.), octane.param_ii("rep"))
     # print(ljmol.param_ii("sigma"), ljmol.param_ii("hsd",273.), ljmol.param_ii("rep"))
 
-    tm = 300.
+    tm = 200.
     s.temp = tm
-    vm = 0.12725355948027697
+    vm = 1e-3
     vn = s._System__moltol() * vm / (cst.Na * pow(cst.nmtom,3))
     s.volume = s._System__moltol() * vm / (cst.Na * pow(cst.nmtom,3))
     print('cgss is given by: ', s._System__cgshapesum())
+    print('Parameters: ======')
+    print('{:18s}'.format('nsegment: '), chc.vk)
+    print('{:18s}'.format('ShapeFactor: '), chc.sk)
+    print('{:18s}'.format('Rep: '), chc.rep)
+    print('{:18s}'.format('Att: '), chc.att)
+    print('{:18s}'.format('Sigma: '), chc.sigma)
+    print('{:18s}'.format('Epsilon: '), chc.epsilon)
     print('A-IDEAL term: =======')
     print('{:18s}'.format('value: '), s.a_ideal())
     print('{:18s}'.format('thermal debrog: '), hexane.thdebroglie(s.temp))
     print('A-MONO term: ========')
     print('{:18s}'.format('value: '), s.a_mono())
     print('{:18s}'.format('a_hs: '), s._System__a_hs())
-    print('{:18s}'.format('a_1: '), s._System__a_1()*(cst.k*s.temp))
-    print('{:18s}'.format('a_2: '), s._System__a_2()*(cst.k*s.temp)**2)
-    print('{:18s}'.format('a_3: '), s._System__a_3()*(cst.k*s.temp)**3)
+    print('{:18s}'.format('a_1: '), s._System__a_1())
+    print('{:18s}'.format('a_2: '), s._System__a_2())
+    print('{:18s}'.format('a_3: '), s._System__a_3())
+    print('{:18s}'.format('HSd: '), chc.hsdiam(s.temp))
     print('A-CHAIN term: =======')
     print('{:18s}'.format('value: '), s.a_chain())
-    print('{:18s}'.format('g-mie: '), s._System__gmieii(hexane.get_gtypeii()))
-    print('{:18s}'.format('gdhs: '), s._System__gdhs(hexane.get_gtypeii()))
-    print('{:18s}'.format('g1: '), s._System__g1(hexane.get_gtypeii()))
-    print('{:18s}'.format('g2: '), s._System__g2(hexane.get_gtypeii()))
+    print('{:18s}'.format('g-mie: '), s._System__gmieii(cyclohexane.get_gtypeii()))
+    print('{:18s}'.format('gdhs: '), s._System__gdhs(cyclohexane.get_gtypeii()))
+    print('{:18s}'.format('g1: '), s._System__g1(cyclohexane.get_gtypeii()))
+    print('{:18s}'.format('g2: '), s._System__g2(cyclohexane.get_gtypeii()))
+    print('{:18s}'.format('dera1: '), s._System__der_a1kl(cyclohexane.get_gtypeii()))
     print('=====================')
     print('{:18s}'.format('A/NkT: '), s.a_ideal() + s.a_mono() + s.a_chain())
     print('{:18s}'.format('Density (mol/m3):'), s._System__nden()/cst.Na)
@@ -1131,14 +1144,14 @@ def main():
     # print('{:18s}'.format('Vapour Pressure:'), VP*1e-6)
     # getv = s.single_phase_v(20e5, T=400)
     # print('{:18s}'.format('v at 20bar 400K:'), getv)
-    print()
-    print('='*21)
-    print('Testing locating critical point')
-    Pc, Tc, vc = s.critical_point(initial_t=500., print_progress=True, get_volume=True)
-    print('{:18s}'.format('P_crit (bar):'), Pc*cst.patobar)
-    print('{:18s}'.format('T_crit (K):'), Tc)
-    print('{:18s}'.format('V_crit (m3/mol):'), vc)
-    print('{:18s}'.format('rho_crit (mol/m3):'), 1/vc)
+    # print()
+    # print('='*21)
+    # print('Testing locating critical point')
+    # Pc, Tc, vc = s.critical_point(initial_t=500., print_progress=True, get_volume=True)
+    # print('{:18s}'.format('P_crit (bar):'), Pc*cst.patobar)
+    # print('{:18s}'.format('T_crit (K):'), Tc)
+    # print('{:18s}'.format('V_crit (m3/mol):'), vc)
+    # print('{:18s}'.format('rho_crit (mol/m3):'), 1/vc)
 
     # v = np.logspace(-4,2,100)
     # P = s.p_v_isotherm(v, temperature=Tc)
