@@ -5,19 +5,21 @@ import pandas as pd
 from math import pi
 import matplotlib.pyplot as plt
 from scipy.optimize import fsolve, least_squares
-from Thermo import ThermoMix,PCSAFT
+from Thermo import ThermoMix,PCSAFT,RK
 from LLESolver import LLESolvers
 # print(timeit.timeit(code, number=10)/10)
 # r=LLESolvers("vonSolms",Method,Species,Length)
 # print(r.LLE(Temp,Pre),t1-t0)
 
 # r=PCSAFT([26.95,34.235],[1100,1670],[288.84, 348.2],[4.097e-10,4.152e-10],[6.02214086e23],[298],[1e-3],[0.5,0.5],[[0.,0.00497],[0.00497,0.]])
-Length = [10,10]
+Length = [50,50]
 Species = ["PB","PS"]
-Temp = 370
-SAFT  = ThermoMix("PCSAFT",Species,Length,[Temp])
-SAFT_CH = ThermoMix("PCSAFT",Species,Length,[Temp],CH="On")
-print(SAFT.GibbsFreeMixing(0.5),SAFT_CH.GibbsFreeMixing(0.5))
+r = RK("FH",Species,Length)
+Temp = 298.15
+
+# SAFT  = ThermoMix("PCSAFT",Species,Length,[Temp])
+# SAFT_CH = ThermoMix("PCSAFT",Species,Length,[Temp],CH="On")
+print(r.RK(0)/(Length[0]*Length[1])**0.5)
 # r = GibbsMixingUNIFAC(["PMMA","PS"],[0.5,0.5],298)
 # print('ln gamma: =======')
 # print('{:18s}'.format('value: '), r.ln_gamma_comb()+r.ln_gamma_res())

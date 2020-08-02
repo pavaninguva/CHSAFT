@@ -8,7 +8,7 @@ import os
 import time
 import sys
 from FHTaylor import taylorapprox_fullFH, taylorapprox_logonlyFH
-from Thermo.Thermo import ThermoMix
+from Thermo.Thermo import RK, ThermoMix
 from parameters.params import (
     A_RAW,
     NOISE_MAGNITUDE,
@@ -19,6 +19,7 @@ from parameters.params import (
     theta_ch,
     MESH_TYPE,
     TIME_STRIDE,
+    SPECIES,
     chi_AB,
     N_A,
     N_B,
@@ -144,20 +145,21 @@ ch_init = InitialConditions(degree=1)
 ch.interpolate(ch_init)
 ch0.interpolate(ch_init)
 
-if SIZE_DISPARITY == "SMALL":
-    kappa = (2.0/3.0)*chi_AB
-    print ("about the same size")
-elif SIZE_DISPARITY == "LARGE": 
-    kappa = (1.0/3.0)*chi_AB
-    print ("big size difference")
-
 
 
 if GIBBS == "FH":
-    #Flory-Huggins Expression
-    r = ThermoMix("FH",["PB","PS"],[N_A,N_B])
-    g = r.GibbsFreeMixing(x_a)
-    print("full FH")
+    # r = RK("FH",["PB","PS"],[N_A,N_B])
+    g = ( x_a * ln(x_a) )/N_A*0.787 + ((1.0-x_a)*ln(1-x_a)/ N_B)*1.270 + x_a*(1.0-x_a)*chi_AB 
+    # g = r.G_RK(x_a)
+    print("Redlich-Kister FH")
+if GIBBS == "UNIFAC":
+    r = RK("UNIFAC",SPECIES,[N_A,N_B])
+    g = r.G_RK(x_a)
+    print("Redlich-Kister UNIFAC")
+if GIBBS == "PCSAFT":
+    r = RK("PCSAFT",SPECIES,[N_A,N_B])
+    g = r.G_RK(x_a)[0]
+    print("Redlich-Kister PCSAFT")
 elif GIBBS == "TaylorApproxFullFH":
     g = taylorapprox_fullFH(N_A, N_B, chi_AB, x_a)
     print("full taylor approx of FH")
@@ -166,6 +168,22 @@ elif GIBBS == "TaylorApproxLogOnlyFH":
     print ("Taylor approx of log term in FH only")
 else: 
     print ("work harder")
+
+if SIZE_DISPARITY == "SMALL":
+    if GIBBS=="FH":
+        kappa = (2.0/3.0)*chi_AB
+    else:
+        chi_AB = r.RK(0)[0]/(N_A*N_B)**0.5
+        kappa = (2.0/3.0)*chi_AB[0]
+    print ("about the same size")
+elif SIZE_DISPARITY == "LARGE": 
+    if GIBBS=="FH":
+        kappa = (1.0/3.0)*chi_AB
+    else:
+        chi_AB = r.RK(0)[0]/(N_A*N_B)**0.5
+        kappa = (1.0/3.0)*chi_AB[0]
+    print ("big size difference")
+print(kappa)
 
 # Using the fenics autodifferentiation toolkit 
 dgdx_a = diff(g,x_a)
