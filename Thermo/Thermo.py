@@ -737,6 +737,7 @@ class GibbsMixingFH(object):
  def __init__(self,Species,Length,Temp):
         self.Nmono=np.array(Length)
         self.Species = Species
+        self.Temp    = Temp
         self.chi = Hilderbrand[Species[0]][Species[1]]/Temp[0]
  def GibbsFreeMixing(self,x):
        xComp = [x,1-x]
@@ -745,7 +746,10 @@ class GibbsMixingFH(object):
        Species = self.Species
        vComp = [xComp[0]*Nmono[0]*V_mono[Species[0]]/(xComp[0]*Nmono[0]*V_mono[Species[0]]+xComp[1]*Nmono[1]*V_mono[Species[1]]),xComp[1]*Nmono[1]*V_mono[Species[1]]/(xComp[0]*Nmono[0]*V_mono[Species[0]]+xComp[1]*Nmono[1]*V_mono[Species[1]])]
        return np.sqrt(Nmono[0]*V_mono[Species[0]]*V_mono[Species[1]]*Nmono[1])*(vComp[0]/(Nmono[0]*V_mono[Species[0]])*np.log(vComp[0])+vComp[1]/(Nmono[1]*V_mono[Species[1]])*np.log(vComp[1])+chi*vComp[0]*vComp[1])
-
+ def chi_AB(self):
+        Temp = self.Temp
+        Species = self.Species
+        return Hilderbrand[Species[0]][Species[1]]/Temp[0]*(V_mono[Species[0]]*V_mono[Species[1]])**0.5
  def dGibbsFreeMixing(self,x):
        chi = self.chi
        Nmono=self.Nmono

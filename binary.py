@@ -151,7 +151,7 @@ ch0.interpolate(ch_init)
 
 if GIBBS == "FH":
     # r = RK("FH",["PB","PS"],[N_A,N_B])
-    g = ( x_a * ln(x_a) )/N_A*0.787 + ((1.0-x_a)*ln(1-x_a)/ N_B)*1.270 + x_a*(1.0-x_a)*chi_AB 
+    g = ( x_a * ln(x_a) )/N_A + ((1.0-x_a)*ln(1-x_a)/ N_B) + x_a*(1.0-x_a)*chi_AB 
     # g = r.G_RK(x_a)
     print("Redlich-Kister FH")
 if GIBBS == "UNIFAC":

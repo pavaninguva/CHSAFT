@@ -1,7 +1,0 @@
-from Thermo import ThermoMix
-from scipy.optimize import minimize
-
-def Spinodal(x,*args=(Method,Species,Length,Temp,Pre)):
-    r  = ThermoMix(Method,Species,Length,[x,1-x],[Temp],[Pre])
-    return r.dGibbsFreeMixing()
-    
