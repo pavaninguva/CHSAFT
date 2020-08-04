@@ -153,7 +153,7 @@ if GIBBS == "FH":
     # r = RK("FH",["PB","PS"],[N_A,N_B])
     g = ( x_a * ln(x_a) )/N_A + ((1.0-x_a)*ln(1-x_a)/ N_B) + x_a*(1.0-x_a)*chi_AB 
     # g = r.G_RK(x_a)
-    print("Redlich-Kister FH")
+    print("Vanilla FH")
 if GIBBS == "UNIFAC":
     r = RK("UNIFAC",SPECIES,[N_A,N_B])
     g = r.G_RK(x_a)
@@ -193,7 +193,8 @@ elif SIZE_DISPARITY == "LARGE":
         chi_AB = r.RK(0)[0]/(N_A*N_B)**0.5
         kappa = (1.0/3.0)*chi_AB[0]
     print ("big size difference")
-print(kappa)
+# print(kappa)
+print(chi_AB)
 
 # Using the fenics autodifferentiation toolkit 
 dgdx_a = diff(g,x_a)
