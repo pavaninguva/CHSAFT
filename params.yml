@@ -1,18 +1,18 @@
 #
 # Mole fraction of A
-A_RAW: 0.211
+A_RAW: 0.1
 
 # Thermo model
 
 # Options for GIBBS are: "FH", "UNIFAC", "PCSAFT", "TaylorApproxFullFH", "TaylorApproxLogOnlyFH"
-GIBBS: PCSAFT
+GIBBS: UNIFAC
 
 
 # Options for SIZE_DISPARITY are: "SMALL", "LARGE"
 SIZE_DISPARITY: SMALL
 
 # Mobility model. Options are: "Variable" or "Constant"
-MOBILITY_MODEL: Variable
+MOBILITY_MODEL: Constant
 
 # Conditions
 TEMPERATURE: 298.15
@@ -20,11 +20,11 @@ TEMPERATURE: 298.15
 #Numerics
 NOISE_MAGNITUDE: 0.01
 TIME_MAX: 10000
-DT: 4
+DT: 1.0
 N_CELLS: 25
 DOMAIN_LENGTH: 5
 theta_ch: 1
-TIME_STRIDE: 500
+TIME_STRIDE: 1000
 MESH_TYPE: structured
 FINITE_ELEMENT: CG
 FINITE_ELEMENT_ORDER: 1

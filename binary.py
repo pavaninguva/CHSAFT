@@ -48,6 +48,7 @@ class CahnHilliardEquation(NonlinearProblem):
 
 parameters["form_compiler"]["optimize"] = True
 parameters["form_compiler"]["cpp_optimize"] = True
+parameters["form_compiler"]["quadrature_degree"] = 2
 
 # INITIAL AND BOUNDARY CONDITIONS OF THE PROBLEM #
 
@@ -240,8 +241,8 @@ if SOLVER_CONFIG == "LU":
     # problem.set_bounds(x_a_min, x_a_max)
     solver = NewtonSolver()
     solver.parameters["linear_solver"] = "lu"
-    #solver.parameters["linear_solver"] = "gmres"
-    #solver.parameters["preconditioner"] = "ilu"
+    # solver.parameters["linear_solver"] = "gmres"
+    # solver.parameters["preconditioner"] = "ilu"
     solver.parameters["convergence_criterion"] = "residual"
     solver.parameters["relative_tolerance"] = 1e-10
     solver.parameters["absolute_tolerance"] = 1e-16
