@@ -1,5 +1,7 @@
-import autograd.numpy as np 
-from autograd import grad
+# import autograd.numpy as np 
+# from autograd import grad
+import numpy as np 
+from dolfin import diff as grad
 import copy
 from dolfin import ln
 from math import pi,log
