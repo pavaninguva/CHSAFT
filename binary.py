@@ -7,7 +7,7 @@ import csv
 import os
 import time
 import sys
-from FHTaylor import taylorapprox_fullFH, taylorapprox_logonlyFH
+from FHTaylor import taylorapprox_fullFH, taylorapprox_logonlyFH, heatofmixing, symquarticdoublewell, polynomialfit_fullFH
 from Thermo.Thermo import RK, ThermoMix
 
 from parameters.params import (
@@ -25,6 +25,7 @@ from parameters.params import (
     N_A,
     N_B,
     GIBBS,
+    TEMPERATURE,
     FINITE_ELEMENT,
     FINITE_ELEMENT_ORDER,
     SOLVER_CONFIG,
@@ -156,12 +157,12 @@ if GIBBS == "FH":
     # g = r.G_RK(x_a)
     print("Vanilla FH")
 if GIBBS == "UNIFAC":
-    r = RK("UNIFAC",SPECIES,[N_A,N_B])
+    r = RK("UNIFAC",SPECIES,[N_A,N_B],[TEMPERATURE])
     g = r.G_RK(x_a)
     print("Redlich-Kister UNIFAC")
 if GIBBS == "PCSAFT":
-    r = RK("PCSAFT",SPECIES,[N_A,N_B])
-    g = r.G_RK(x_a)[0]
+    r = RK("PCSAFT",SPECIES,[N_A,N_B],[TEMPERATURE])
+    g = r.G_RK(x_a)
     print("Redlich-Kister PCSAFT")
 elif GIBBS == "TaylorApproxFullFH":
     g = taylorapprox_fullFH(N_A, N_B, chi_AB, x_a)
@@ -184,14 +185,15 @@ if SIZE_DISPARITY == "SMALL":
     if GIBBS=="FH":
         kappa = (2.0/3.0)*chi_AB
     else:
-        chi_AB = r.RK(0)[0]/(N_A*N_B)**0.5
+        chi_AB = r.RK(0)/(N_A*N_B)**0.5
+        print(chi_AB)
         kappa = (2.0/3.0)*chi_AB[0]
     print ("about the same size")
 elif SIZE_DISPARITY == "LARGE": 
     if GIBBS=="FH":
         kappa = (1.0/3.0)*chi_AB
     else:
-        chi_AB = r.RK(0)[0]/(N_A*N_B)**0.5
+        chi_AB = r.RK(0)/(N_A*N_B)**0.5
         kappa = (1.0/3.0)*chi_AB[0]
     print ("big size difference")
 # print(kappa)

@@ -5,15 +5,34 @@ from dolfin import ln
 from math import pi,log
 from scipy.optimize import fsolve, least_squares
 
+# This thermo module provides a comprehensive set of classes to be used within a Cahn-Hilliard system. The following
+# classes are available:
+#      - RK: Provides the Redlich-Kister coefficients for a certain order expansion for any of the gibbs free energy
+#            of mixing methods provided in the module, along with a method to evaluate the coefficients and a taylor
+#            approximation of the logarithm terms
+#      - ThermoMix: The master gibbs free energy of mixing class where on can specify the conditions, species and
+#            thermodynamic EoS to be used. It can also be used to obtain the derivative of the gibbs free energy of
+#            mixing for all EoS provided. g_res is the function to be used to obtain the total gibbs free energy for
+#            a system only compatible with PCSAFT.
+#      - PCSAFT: This is the standard PCSAFT code that, with specified parameters and conditions, can be used to
+#            obtain the residual helmholtz free energy, compressibility factor and reduced chemical potential.
+#      - GibbsMixingPCSAFT: The class used to obtain the Gibbs free energy of mixing and its derivative from PCSAFT
+#            has a pressure solver within.
+#      - GibbsMixingFH: The class used to obtain the Gibbs free energy of mixing from Flory-Huggins and its derivative
+#      - GibbsMixingUNIFAC: The class used to obtain the Gibbs free energy of mixing and its derivative from UNIFAC.
+#            Note that autograd must be used to obtain the derivative.
+# The module has an assortment of parameters available at the end of the script which can be used to model the systems
+# of interest.
+# By P. Walker & HW. Yew
+
 class RK(object):
- def __init__(self, method, species, length, temp=[298], pre=[1e5]):
+ def __init__(self, method, species, length, temp=[298], pre=[1e5]):   
      self.method = method
      self.species = species
      self.length = length
      self.temp = temp
      self.pre = pre
      self.P = self.RK(6)
-     # self.P2 = self.poly()
 
  def RK(self,n):
      method = self.method
@@ -21,40 +40,29 @@ class RK(object):
      Nmono = self.length
      temp = self.temp
      pre = self.pre
+
+     # Sample a large range of compositions to obtain an accurate fit.
      x_list = np.linspace(0.00001,0.99999,100)
      x2_list = 2*x_list-1
      Gres_list = []
+
+     # At the conidtions, system and method specified, use ThermoMix to obtain the gibbs free energy of mixing.
      prop = ThermoMix(method, species, Nmono, temp, pre)
+
      for i in range(len(x_list)):
+              # Obtain the contribution to be fitted by RK; (gMix - xlnx)/(x*(1-x))
               Gres_list.append((prop.GibbsFreeMixing(x_list[i]) - x_list[i]*np.log(x_list[i]) - (1-x_list[i])*np.log(1-x_list[i]))/x_list[i]/(1-x_list[i]))
-#      print(Gres_list)
+     # Fit the RK polynomial for order n  
      P = np.polyfit(x2_list, Gres_list, n)
      return P
 
- # def poly(self):
- #     method = self.method
- #     species = self.species
- #     length = self.length
- #     temp = self.temp
- #     pre = self.pre
- #     x_list = np.linspace(0.00001,0.99999,50)
- #     Gres_list = []
- #     prop = ThermoMix(method, species, length, temp, pre)
- #     for i in range(len(x_list)):
- #         Gres_list.append((prop.GibbsFreeMixing(x_list[i]) - x_list[i]*np.log(x_list[i]) - (1-x_list[i])*np.log(1-x_list[i])))
- #     P = np.polyfit(x_list, Gres_list, 6)
- #     return P
-
  def G_RK(self, v):
+     # From the determined RK coefficients, obtain gMix
      P = self.P
+     # Convect vol frac to mol frac
      x = v*self.length[1]*V_mono[self.species[1]]/((1-v)*self.length[0]*V_mono[self.species[0]]+v*self.length[1]*V_mono[self.species[1]])
 #      x = v
      return 1/np.sqrt(self.length[0]*self.length[1])*(x*ln(x)+(1.0-x)*ln(1.0-x)+x*(1-x)*sum([P[::-1][i]*(2*x-1)**i for i in range(len(P))]))
-#      return (x*np.log(x)+(1.0-x)*np.log(1.0-x)+x*(1-x)*sum([P[::-1][i]*(2*x-1)**i for i in range(len(P))]))
-
- # def G_poly(self, x):
- #     P = self.P2
- #     return self.taylorapprox_logonlyFH(self.length[0],self.length[1],0,x)+sum([P[::-1][i]*(x)**i for i in range(len(P))])
 
  def taylorapprox_logonlyFH (self, N_1, N_2, chi, x):  # from Pavan
      combinatorial_1 = x*(2.0*x - 512.0*(x - 0.5)**10.0/5.0 + 512.0*(x - 1.0/2.0)**9.0/9.0 - 32.0*(x - 0.5)**8.0 + 128*(x - 0.5)**7.0/7.0 - 32.0*(x - 0.5)**6.0/3.0 + 32.0*(x - 0.5)**5.0/5.0 - 4.0*(x - 0.5)**4.0 + 8.0*(x - 0.5)**3.0/3.0 - 2.0*(x - 0.5)**2.0 - 1.0 - np.log(2.0)) / N_1
@@ -63,11 +71,12 @@ class RK(object):
  
      residual = x*(1.0-x)*chi
  
-     f = combinatorial_1 + combinatorial_2 + residual
+     f = combinatorial_1 + combinatorial_2
 
      return f
 
 class ThermoMix(object):
+ # The master gMix class which can be used for all methods
  def __init__(self,Method,Species,Length,Temp=[298],Pre=[1e5],k=None,CH="Off"):
          self.Method = Method
          self.Species = Species
@@ -75,18 +84,25 @@ class ThermoMix(object):
          self.Temp = Temp
          self.Pre = Pre
          self.CH  = CH
+         # Initialise the given method
          if self.Method == "FH":
               self.r = GibbsMixingFH(self.Species,self.Length,self.Temp)
          elif self.Method == "UNIFAC":
               self.r = GibbsMixingUNIFAC(self.Species,self.Length,self.Temp)
          elif self.Method == "PCSAFT":
+              # CH is no longer relevant, please ignore.
               if CH=="Off":
                      self.r = GibbsMixingPCSAFT(self.Species,self.Length,self.Temp,self.Pre,k)
               else:
                      self.r = GibbsMixingPCSAFT(self.Species,self.Length,self.Temp,self.Pre,k,CH)
  def GibbsFreeMixing(self,x):
+       # evaluate the gibbs free energy of mixing for a given method
        if self.CH=="Off":
-              gMix = self.r.GibbsFreeMixing(x)
+              if self.Method=="PCSAFT":
+                     # PCSAFT outputs a list rather than a float
+                     gMix = self.r.GibbsFreeMixing(x)[0]
+              else:
+                     gMix = self.r.GibbsFreeMixing(x)
        else:
               gMix = self.r.GibbsFreeMixing_CH(x)
        return gMix
@@ -94,6 +110,7 @@ class ThermoMix(object):
        dgMix=self.r.dGibbsFreeMixing(x)
        return dgMix
  def g_res(self,x):
+       # Obtain the total gibbs free energy; only compatible with PCSAFT
        if self.Method == "FH":
               print('Not supported')
        elif self.Method == "UNIFAC":
