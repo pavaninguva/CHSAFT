@@ -35,7 +35,8 @@ class RK(object):
      self.temp = temp
      self.pre = pre
      self.P = self.RK(6)
-
+     self.Vol = ThermoMix(method,species,length,temp,pre).Volume()
+     print(self.Vol)
  def RK(self,n):
      method = self.method
      species = self.species
@@ -61,8 +62,9 @@ class RK(object):
  def G_RK(self, v):
      # From the determined RK coefficients, obtain gMix
      P = self.P
+     Vol = self.Vol
      # Convect vol frac to mol frac
-     x = v*self.length[1]*V_mono[self.species[1]]/((1-v)*self.length[0]*V_mono[self.species[0]]+v*self.length[1]*V_mono[self.species[1]])
+     x = v*Vol[0]/((1-v)*Vol[0]+v*Vol[1])
 #      x = v
      return 1/np.sqrt(self.length[0]*self.length[1])*(x*ln(x)+(1.0-x)*ln(1.0-x)+x*(1-x)*sum([P[::-1][i]*(2*x-1)**i for i in range(len(P))]))
 
@@ -120,6 +122,8 @@ class ThermoMix(object):
        elif self.Method == "PCSAFT":
               A=self.r.g_res(x)
        return A
+ def Volume(self):
+       return self.r.Volume()
 
 class PCSAFT(object):
  def __init__(self, nsegment, Mr, epsilon,sigma,NParticles,Temperature,Volume,xComp,k):
@@ -751,6 +755,23 @@ class  GibbsMixingPCSAFT(object):
      dg_res = np.log(xComp[0])-np.log(xComp[1])+(mu_mix[0]-mu_mix[1])
      g_res  =sum(xComp*(np.log(xComp)+g_mix))
      return [g_res,dg_res]
+ def Volume(self):
+    Temp=self.Temp
+    NParticles=self.NParticles
+    nsegment=self.nsegment
+    epsilon=self.epsilon
+    sigma=self.sigma
+    Pre=self.Pre
+    Mr=self.Mr
+    Vol_pure = []
+    for i in range(len(nsegment)):
+             x0 = np.log10(np.sum(NParticles*nsegment[i]*pow(sigma[i],3)*pow(1-0.12*np.exp(-3*epsilon[i]/(Temp)),3))*pi/6/0.5)
+             lb = np.log10(np.sum(NParticles*nsegment[i]*pow(sigma[i],3)*pow(1-0.12*np.exp(-3*epsilon[i]/(Temp)),3))*pi/6)
+             ub = np.log10(np.sum(NParticles*nsegment[i]*pow(sigma[i],3)*pow(1-0.12*np.exp(-3*epsilon[i]/(Temp)),3))*pi/6/0.1)
+
+             V=least_squares(self.Pressure,x0,bounds=(lb,ub),args=(Pre,[nsegment[i]],[Mr[i]],[epsilon[i]],[sigma[i]],NParticles,Temp,[1.],[[0.]]))
+             Vol_pure.append(pow(10,V.x[0]))
+    return Vol_pure
  
 class GibbsMixingFH(object):
  def __init__(self,Species,Length,Temp):
@@ -769,6 +790,10 @@ class GibbsMixingFH(object):
         Temp = self.Temp
         Species = self.Species
         return Hilderbrand[Species[0]][Species[1]]/Temp[0]*(V_mono[Species[0]]*V_mono[Species[1]])**0.5
+ def Volume(self):
+    Nmono = self.Nmono
+    Species = self.Species
+    return [Nmono[0]*V_mono[Species[0]],Nmono[1]*V_mono[Species[1]]]
  def dGibbsFreeMixing(self,x):
        chi = self.chi
        Nmono=self.Nmono
@@ -788,7 +813,7 @@ class GibbsMixingUNIFAC(object):
  def GibbsFreeMixing(self,x):
        ln_gamma      = self.ln_gamma(x)
        Temp          = self.Temp
-       vol           = self.volume()
+       vol           = self.Volume()
        A = 0.
        xComp = [x,1-x]
        for i in range(len(xComp)):
@@ -834,10 +859,10 @@ class GibbsMixingUNIFAC(object):
        return r
 
  # Free volume contribution
- def volume(self):
+ def Volume(self):
        Species = self.Species
        Temp    = self.Temp
-       volume  = np.zeros((len(Species)))
+       Volume  = np.zeros((len(Species)))
        Length  = self.Length
        for i in range(len(Species)):
               if Species[i] in list(T_G.keys()):
@@ -848,8 +873,8 @@ class GibbsMixingUNIFAC(object):
               else:
                      coeff = expansion_coefficients[Species[i]]
               rho = rho_reference[Species[i]] / (1 + coeff*(Temp - rho_reference_temp[Species[i]]))
-              volume[i] = 1 / rho * Length[i]*Segment_mw[Species[i]]
-       return volume
+              Volume[i] = 1 / rho * Length[i]*Segment_mw[Species[i]]
+       return Volume
 
  def C_i_coeff (self):
        Species = self.Species
@@ -865,14 +890,14 @@ class GibbsMixingUNIFAC(object):
        return C_1
 
  def red_volume(self):
-       vol = self.volume()
+       vol = self.Volume()
        ri  = self.r_i()
        red_volume = vol/(15.17*1.28*ri)
        return red_volume
 
  def red_volume_mix (self,x):
        xComp = [x,1-x]
-       vol = self.volume()
+       vol = self.Volume()
        ri = self.r_i()
        Species = self.Species
        Length = self.Length
@@ -1148,9 +1173,9 @@ Polymer_groups = {
 # Setting up volume expansion dicts
 # rho_reference has units of g/ cm^3
 rho_reference = {
-    "PMMA":1.190,
-    "PS":1.05,
-    "PB":0.915
+    "PMMA":1.190*1e6,
+    "PS":1.05*1e6,
+    "PB":0.915*1e6
 }
 
 #units of Celcius

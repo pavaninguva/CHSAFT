@@ -186,7 +186,6 @@ if SIZE_DISPARITY == "SMALL":
         kappa = (2.0/3.0)*chi_AB
     else:
         chi_AB = r.RK(0)/(N_A*N_B)**0.5
-        print(chi_AB)
         kappa = (2.0/3.0)*chi_AB[0]
     print ("about the same size")
 elif SIZE_DISPARITY == "LARGE": 
@@ -196,8 +195,6 @@ elif SIZE_DISPARITY == "LARGE":
         chi_AB = r.RK(0)/(N_A*N_B)**0.5
         kappa = (1.0/3.0)*chi_AB[0]
     print ("big size difference")
-# print(kappa)
-print(chi_AB)
 
 # Using the fenics autodifferentiation toolkit 
 dgdx_a = diff(g,x_a)
