@@ -64,7 +64,7 @@ class RK(object):
      P = self.P
      Vol = self.Vol
      # Convect vol frac to mol frac
-     x = v*Vol[0]/((1-v)*Vol[0]+v*Vol[1])
+     x = v/Vol[0]/((1-v)/Vol[0]+v/Vol[1])
 #      x = v
      return 1/np.sqrt(self.length[0]*self.length[1])*(x*ln(x)+(1.0-x)*ln(1.0-x)+x*(1-x)*sum([P[::-1][i]*(2*x-1)**i for i in range(len(P))]))
 
