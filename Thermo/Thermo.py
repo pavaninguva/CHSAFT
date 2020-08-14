@@ -4,7 +4,7 @@ import numpy as np
 from dolfin import diff as grad
 import copy
 from dolfin import ln
-from math import pi,log
+from math import pi,log,sqrt
 from scipy.optimize import fsolve, least_squares
 
 # This thermo module provides a comprehensive set of classes to be used within a Cahn-Hilliard system. The following
@@ -58,7 +58,28 @@ class RK(object):
      # Fit the RK polynomial for order n  
      P = np.polyfit(x2_list, Gres_list, n)
      return P
+ def chi(self):
+     method = self.method
+     species = self.species
+     Nmono = self.length
+     temp = self.temp
+     pre = self.pre
+     # Sample a large range of compositions to obtain an accurate fit.
+     x_list = np.linspace(0.00001,0.99999,100)
+     Gres_list = []
+     
+     # At the conidtions, system and method specified, use ThermoMix to obtain the gibbs free energy of mixing.
+     prop = ThermoMix(method, species, Nmono, temp, pre)
 
+     # Convert to volumetric fraction
+     Vol = self.Vol
+     v_list = x_list*Vol[0]/((1-x_list)*Vol[1]+x_list*Vol[0])
+     v2_list =1-2*v_list
+     for i in range(len(x_list)):
+              # Obtain the contribution to be fitted by RK; (gMix - xlnx)/(x*(1-x))
+              Gres_list.append((prop.GibbsFreeMixing(x_list[i])/sqrt(Nmono[0]*Nmono[1]) - v_list[i]/Nmono[0]*np.log(v_list[i]) - (1-v_list[i])/Nmono[1]*np.log(1-v_list[i]))/v_list[i]/(1-v_list[i]))
+     P = np.polyfit(v2_list, Gres_list, 0)
+     return P
  def G_RK(self, v):
      # From the determined RK coefficients, obtain gMix
      P = self.P
