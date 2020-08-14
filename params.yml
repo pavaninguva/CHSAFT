@@ -4,8 +4,8 @@ A_RAW: 0.5
 
 # Thermo model
 
-# Options for GIBBS are: "FH", "UNIFAC", "PCSAFT", "TaylorApproxFullFH", "TaylorApproxLogOnlyFH"
-GIBBS: "PCSAFT"
+# Options for GIBBS are: "FH", "UNIFAC", "PCSAFT_Fit","PCSAFT_CR", "TaylorApproxFullFH", "TaylorApproxLogOnlyFH"
+GIBBS: "PCSAFT_Fit"
 
 
 # Options for SIZE_DISPARITY are: "SMALL", "LARGE"

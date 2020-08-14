@@ -156,12 +156,16 @@ if GIBBS == "FH":
     g = ( x_a * ln(x_a) )/N_A + ((1.0-x_a)*ln(1-x_a)/ N_B) + x_a*(1.0-x_a)*chi_AB 
     # g = r.G_RK(x_a)
     print("Vanilla FH")
-if GIBBS == "UNIFAC":
+elif GIBBS == "UNIFAC":
     r = RK("UNIFAC",SPECIES,[N_A,N_B],[TEMPERATURE])
     g = r.G_RK(x_a)
     print("Redlich-Kister UNIFAC")
-if GIBBS == "PCSAFT":
-    r = RK("PCSAFT",SPECIES,[N_A,N_B],[TEMPERATURE])
+elif GIBBS == "PCSAFT_CR":
+    r = RK("PCSAFT",SPECIES,[N_A,N_B],[TEMPERATURE],CR="On")
+    g = r.G_RK(x_a)
+    print("Redlich-Kister PCSAFT")
+elif GIBBS == "PCSAFT_Fit":
+    r = RK("PCSAFT",SPECIES,[N_A,N_B],[TEMPERATURE],CR="Off")
     g = r.G_RK(x_a)
     print("Redlich-Kister PCSAFT")
 elif GIBBS == "TaylorApproxFullFH":

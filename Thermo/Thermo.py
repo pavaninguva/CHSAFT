@@ -28,12 +28,13 @@ from scipy.optimize import fsolve, least_squares
 # By P. Walker & HW. Yew
 
 class RK(object):
- def __init__(self, method, species, length, temp=[298], pre=[1e5]):   
+ def __init__(self, method, species, length, temp=[298], pre=[1e5],CR="Off"):   
      self.method = method
      self.species = species
      self.length = length
      self.temp = temp
      self.pre = pre
+     self.CR  = CR
      self.P = self.RK(6)
      self.Vol = ThermoMix(method,species,length,temp,pre).Volume()
      print(self.Vol)
@@ -43,14 +44,14 @@ class RK(object):
      Nmono = self.length
      temp = self.temp
      pre = self.pre
-
+     CR  = self.CR
      # Sample a large range of compositions to obtain an accurate fit.
      x_list = np.linspace(0.00001,0.99999,100)
      x2_list = 2*x_list-1
      Gres_list = []
 
      # At the conidtions, system and method specified, use ThermoMix to obtain the gibbs free energy of mixing.
-     prop = ThermoMix(method, species, Nmono, temp, pre)
+     prop = ThermoMix(method, species, Nmono, temp, pre,CR=CR)
 
      for i in range(len(x_list)):
               # Obtain the contribution to be fitted by RK; (gMix - xlnx)/(x*(1-x))
@@ -64,12 +65,13 @@ class RK(object):
      Nmono = self.length
      temp = self.temp
      pre = self.pre
+     CR  = self.CR
      # Sample a large range of compositions to obtain an accurate fit.
      x_list = np.linspace(0.00001,0.99999,100)
      Gres_list = []
      
      # At the conidtions, system and method specified, use ThermoMix to obtain the gibbs free energy of mixing.
-     prop = ThermoMix(method, species, Nmono, temp, pre)
+     prop = ThermoMix(method, species, Nmono, temp, pre,CR=CR)
 
      # Convert to volumetric fraction
      Vol = self.Vol
@@ -102,34 +104,32 @@ class RK(object):
 
 class ThermoMix(object):
  # The master gMix class which can be used for all methods
- def __init__(self,Method,Species,Length,Temp=[298],Pre=[1e5],k=None,CH="Off"):
+ def __init__(self,Method,Species,Length,Temp=[298],Pre=[1e5],k=None,CR="Off"):
          self.Method = Method
          self.Species = Species
          self.Length = Length
          self.Temp = Temp
          self.Pre = Pre
-         self.CH  = CH
+         self.CR  = CR
          # Initialise the given method
          if self.Method == "FH":
               self.r = GibbsMixingFH(self.Species,self.Length,self.Temp)
          elif self.Method == "UNIFAC":
               self.r = GibbsMixingUNIFAC(self.Species,self.Length,self.Temp)
          elif self.Method == "PCSAFT":
-              # CH is no longer relevant, please ignore.
-              if CH=="Off":
+              # Choose between combining rule or fitted kij
+              if CR=="Off":
                      self.r = GibbsMixingPCSAFT(self.Species,self.Length,self.Temp,self.Pre,k)
               else:
-                     self.r = GibbsMixingPCSAFT(self.Species,self.Length,self.Temp,self.Pre,k,CH)
+                     k = 1.-2**6*SIGMA[Species[0]]**3*SIGMA[Species[1]]**3/(SIGMA[Species[0]]+SIGMA[Species[1]])**6
+                     self.r = GibbsMixingPCSAFT(self.Species,self.Length,self.Temp,self.Pre,k)
  def GibbsFreeMixing(self,x):
        # evaluate the gibbs free energy of mixing for a given method
-       if self.CH=="Off":
-              if self.Method=="PCSAFT":
-                     # PCSAFT outputs a list rather than a float
-                     gMix = self.r.GibbsFreeMixing(x)[0]
-              else:
-                     gMix = self.r.GibbsFreeMixing(x)
+       if self.Method=="PCSAFT":
+              # PCSAFT outputs a list rather than a float
+              gMix = self.r.GibbsFreeMixing(x)[0]
        else:
-              gMix = self.r.GibbsFreeMixing_CH(x)
+              gMix = self.r.GibbsFreeMixing(x)
        return gMix
  def dGibbsFreeMixing(self,x):
        dgMix=self.r.dGibbsFreeMixing(x)
