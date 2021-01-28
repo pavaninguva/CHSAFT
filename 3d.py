@@ -35,6 +35,7 @@ from parameters.params import (
 )
 
 
+
 class CahnHilliardEquation(NonlinearProblem):
     def __init__(self, a, L):
         NonlinearProblem.__init__(self)
@@ -92,6 +93,15 @@ class TopBoundary(SubDomain):
     def inside(self, x, on_boundary):
         return on_boundary and near(x[1], DOMAIN_LENGTH)
 
+class BackBoundary(SubDomain):
+    def inside(self, x, on_boundary):
+        return on_boundary and near(x[2], 0.0)
+
+
+class FrontBoundary(SubDomain):
+    def inside(self, x, on_boundary):
+        return on_boundary and near(x[2], DOMAIN_LENGTH)
+
 
 class PeriodicBoundary(SubDomain):
     def inside(self, x, on_boundary):
@@ -101,24 +111,12 @@ class PeriodicBoundary(SubDomain):
     def map(self, x, y):
         y[0] = x[0] - DOMAIN_LENGTH
         y[1] = x[1]
+        y[2] = x[2]
 
 
 N = int(N_CELLS)
 
-if MESH_TYPE == "structured":
-    mesh = RectangleMesh(
-        Point(0.0, 0.0), Point(DOMAIN_LENGTH, DOMAIN_LENGTH), N, N
-    )
-else:
-    domain_vertices = [
-        Point(0.0, 0.0),
-        Point(DOMAIN_LENGTH, 0.0),
-        Point(DOMAIN_LENGTH, DOMAIN_LENGTH),
-        Point(0.0, DOMAIN_LENGTH),
-    ]
-
-    domain = Polygon(domain_vertices)
-    mesh = generate_mesh(domain, N)
+mesh = BoxMesh(Point(0.0,0.0,0.0), Point(DOMAIN_LENGTH,DOMAIN_LENGTH,DOMAIN_LENGTH),N,N,N)
 
 
 # CG stands for continuous galerkin can is a lagrange type element. 
@@ -245,7 +243,7 @@ if SOLVER_CONFIG == "LU":
     solver.parameters["convergence_criterion"] = "residual"
     solver.parameters["relative_tolerance"] = 1e-10
     solver.parameters["absolute_tolerance"] = 1e-16
-    # solver.parameters["relaxation_parameter"] = 1.0
+    # solver.parameters["relaxation_parameter"] = 0.5
 
 elif SOLVER_CONFIG == "KRYLOV":
     class CustomSolver(NewtonSolver):
@@ -311,4 +309,3 @@ while (t < TIME_MAX):
     if (timestep % time_stride ==0):
         # file.write (ch.split()[0], t)
         file << (ch.split()[0], t)
-

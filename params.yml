@@ -1,11 +1,11 @@
 #
 # Mole fraction of A
-A_RAW: 0.5
+A_RAW: 0.25
 
 # Thermo model
 
 # Options for GIBBS are: "FH", "UNIFAC", "PCSAFT", "TaylorApproxFullFH", "TaylorApproxLogOnlyFH"
-GIBBS: PCSAFT
+GIBBS: FH
 
 
 # Options for SIZE_DISPARITY are: "SMALL", "LARGE"
@@ -19,20 +19,20 @@ TEMPERATURE: 298.15
 
 #Numerics
 NOISE_MAGNITUDE: 0.01
-TIME_MAX: 10000
-DT: 1.0
-N_CELLS: 25
-DOMAIN_LENGTH: 5
+TIME_MAX: 100000
+DT: 200.0
+N_CELLS: 100
+DOMAIN_LENGTH: 100
 theta_ch: 1
-TIME_STRIDE: 200
+TIME_STRIDE: 100
 MESH_TYPE: structured
 FINITE_ELEMENT: CG
 FINITE_ELEMENT_ORDER: 1
 # Options are: "LU" or "KRYLOV"
-SOLVER_CONFIG: LU
+SOLVER_CONFIG: KRYLOV
 
 # Options are: "Vashistha94", "He97", "PS_PMMA", "PS_PB"
-MATERIAL_CHOICE: PS_PB
+MATERIAL_CHOICE: PS_PMMA
 
 # Materials
 # PS_PMMA
