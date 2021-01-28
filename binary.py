@@ -156,12 +156,16 @@ if GIBBS == "FH":
     g = ( x_a * ln(x_a) )/N_A + ((1.0-x_a)*ln(1-x_a)/ N_B) + x_a*(1.0-x_a)*chi_AB 
     # g = r.G_RK(x_a)
     print("Vanilla FH")
-if GIBBS == "UNIFAC":
+elif GIBBS == "UNIFAC":
     r = RK("UNIFAC",SPECIES,[N_A,N_B],[TEMPERATURE])
     g = r.G_RK(x_a)
     print("Redlich-Kister UNIFAC")
-if GIBBS == "PCSAFT":
-    r = RK("PCSAFT",SPECIES,[N_A,N_B],[TEMPERATURE])
+elif GIBBS == "PCSAFT_CR":
+    r = RK("PCSAFT",SPECIES,[N_A,N_B],[TEMPERATURE],CR="On")
+    g = r.G_RK(x_a)
+    print("Redlich-Kister PCSAFT")
+elif GIBBS == "PCSAFT_Fit":
+    r = RK("PCSAFT",SPECIES,[N_A,N_B],[TEMPERATURE],CR="Off")
     g = r.G_RK(x_a)
     print("Redlich-Kister PCSAFT")
 elif GIBBS == "TaylorApproxFullFH":
@@ -185,17 +189,18 @@ if SIZE_DISPARITY == "SMALL":
     if GIBBS=="FH":
         kappa = (2.0/3.0)*chi_AB
     else:
-        chi_AB = r.RK(0)/(N_A*N_B)**0.5
+        chi_AB = r.chi()
         kappa = (2.0/3.0)*chi_AB[0]
     print ("about the same size")
 elif SIZE_DISPARITY == "LARGE": 
     if GIBBS=="FH":
         kappa = (1.0/3.0)*chi_AB
     else:
-        chi_AB = r.RK(0)/(N_A*N_B)**0.5
+        chi_AB = r.chi()
         kappa = (1.0/3.0)*chi_AB[0]
     print ("big size difference")
-
+print(kappa)
+print(2.0/3.0*r.RK(0)[0]/(N_A*N_B)**0.5)
 # Using the fenics autodifferentiation toolkit 
 dgdx_a = diff(g,x_a)
 
