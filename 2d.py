@@ -111,13 +111,13 @@ class PeriodicBoundary(SubDomain):
     def map(self, x, y):
         y[0] = x[0] - DOMAIN_LENGTH
         y[1] = x[1]
-        y[2] = x[2]
 
 
 N = int(N_CELLS)
 
-mesh = BoxMesh(Point(0.0,0.0,0.0), Point(DOMAIN_LENGTH,DOMAIN_LENGTH,DOMAIN_LENGTH),N,N,N)
-
+mesh = RectangleMesh(
+        Point(0.0, 0.0), Point(DOMAIN_LENGTH, DOMAIN_LENGTH), N, N
+    )
 
 # CG stands for continuous galerkin can is a lagrange type element. 
 # The "1" corresponds to the order. So this is a linear lagrange element. 
@@ -243,7 +243,7 @@ if SOLVER_CONFIG == "LU":
     solver.parameters["convergence_criterion"] = "residual"
     solver.parameters["relative_tolerance"] = 1e-10
     solver.parameters["absolute_tolerance"] = 1e-16
-    solver.parameters["relaxation_parameter"] = 0.8
+    # solver.parameters["relaxation_parameter"] = 0.5
 
 elif SOLVER_CONFIG == "KRYLOV":
     class CustomSolver(NewtonSolver):

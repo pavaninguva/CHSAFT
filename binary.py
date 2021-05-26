@@ -200,7 +200,7 @@ elif SIZE_DISPARITY == "LARGE":
         kappa = (1.0/3.0)*chi_AB[0]
     print ("big size difference")
 print(kappa)
-print(2.0/3.0*r.RK(0)[0]/(N_A*N_B)**0.5)
+# print(2.0/3.0*r.RK(0)[0]/(N_A*N_B)**0.5)
 # Using the fenics autodifferentiation toolkit 
 dgdx_a = diff(g,x_a)
 
@@ -292,6 +292,12 @@ while (t < TIME_MAX):
     ch0.vector()[:] = ch.vector()
     solver.solve(problem, ch.vector())
     timestep += 1
+
+    # for i in ch.vector()[::2]:
+    #     if i < 0.0:
+    #         i == 0.0 + 1e-16
+    #     elif i > 1.0:
+    #         i == 1.0 - 1e-16
 
     # Assembling the various terms of the Landau-Ginzburg free energy functional
     homogenous_energy = assemble(g * dx())

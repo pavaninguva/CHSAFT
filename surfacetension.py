@@ -1,6 +1,3 @@
-# Importing relevant packages 
-# random is needed for noise generation in initialisation of system
-# dolfin is the finite element solver package within the fenics environment
 import random
 from dolfin import *
 import csv
@@ -31,10 +28,9 @@ from parameters.params import (
     SOLVER_CONFIG,
     MOBILITY_MODEL,
     SIZE_DISPARITY,
-    A_SYM
+    A_SYM,
+    MOBILITY_MODEL
 )
-
-
 
 class CahnHilliardEquation(NonlinearProblem):
     def __init__(self, a, L):
@@ -52,10 +48,6 @@ parameters["form_compiler"]["optimize"] = True
 parameters["form_compiler"]["cpp_optimize"] = True
 parameters["form_compiler"]["quadrature_degree"] = 2
 
-# INITIAL AND BOUNDARY CONDITIONS OF THE PROBLEM #
-
-# Initial conditions which include random noise as a perturbation
-
 class InitialConditions(UserExpression):
     def __init__(self, **kwargs):
         random.seed(2 + MPI.rank(MPI.comm_world))
@@ -67,12 +59,6 @@ class InitialConditions(UserExpression):
         values[1] = 0.0
     def value_shape(self):
         return (2,)
-
-# Setting up Mesh and Periodic Boundary Conditions #
-
-## Setting up periodic boundary conditions. 
-
-## We are creating classes for defining the various parts of the boundaries (top, bottom, left and right)
 
 class LeftBoundary(SubDomain):
     def inside(self, x, on_boundary):
@@ -93,15 +79,6 @@ class TopBoundary(SubDomain):
     def inside(self, x, on_boundary):
         return on_boundary and near(x[1], DOMAIN_LENGTH)
 
-class BackBoundary(SubDomain):
-    def inside(self, x, on_boundary):
-        return on_boundary and near(x[2], 0.0)
-
-
-class FrontBoundary(SubDomain):
-    def inside(self, x, on_boundary):
-        return on_boundary and near(x[2], DOMAIN_LENGTH)
-
 
 class PeriodicBoundary(SubDomain):
     def inside(self, x, on_boundary):
@@ -110,23 +87,12 @@ class PeriodicBoundary(SubDomain):
     # Map RightBoundary to LeftBoundary
     def map(self, x, y):
         y[0] = x[0] - DOMAIN_LENGTH
-        y[1] = x[1]
-        y[2] = x[2]
 
 
 N = int(N_CELLS)
 
-mesh = BoxMesh(Point(0.0,0.0,0.0), Point(DOMAIN_LENGTH,DOMAIN_LENGTH,DOMAIN_LENGTH),N,N,N)
+mesh = IntervalMesh(N, 0.0,DOMAIN_LENGTH)
 
-
-# CG stands for continuous galerkin can is a lagrange type element. 
-# The "1" corresponds to the order. So this is a linear lagrange element. 
-# CH = FunctionSpace(mesh, "CG", 1, constrained_domain=PeriodicBoundary())
-# P1 = FiniteElement("Lagrange", interval, 1)
-
-# # # This function has been deprecated for 2016.1.0, but still works. 
-# # # The requirement is to created a combined concentration and chemical potential function space
-# # # Since we are solving for two variables. 
 P1 = FiniteElement(FINITE_ELEMENT, mesh.ufl_cell(), FINITE_ELEMENT_ORDER)
 CH = FunctionSpace(mesh, P1*P1)
 
@@ -147,8 +113,6 @@ ch_init = InitialConditions(degree=1)
 ch.interpolate(ch_init)
 ch0.interpolate(ch_init)
 
-
-
 if GIBBS == "FH":
     # r = RK("FH",["PB","PS"],[N_A,N_B])
     g = ( x_a * ln(x_a) )/N_A + ((1.0-x_a)*ln(1-x_a)/ N_B) + x_a*(1.0-x_a)*chi_AB 
@@ -158,8 +122,12 @@ if GIBBS == "UNIFAC":
     r = RK("UNIFAC",SPECIES,[N_A,N_B],[TEMPERATURE])
     g = r.G_RK(x_a)
     print("Redlich-Kister UNIFAC")
-if GIBBS == "PCSAFT":
-    r = RK("PCSAFT",SPECIES,[N_A,N_B],[TEMPERATURE])
+elif GIBBS == "PCSAFT_CR":
+    r = RK("PCSAFT",SPECIES,[N_A,N_B],[TEMPERATURE],CR="On")
+    g = r.G_RK(x_a)
+    print("Redlich-Kister PCSAFT")
+elif GIBBS == "PCSAFT_Fit":
+    r = RK("PCSAFT",SPECIES,[N_A,N_B],[TEMPERATURE],CR="Off")
     g = r.G_RK(x_a)
     print("Redlich-Kister PCSAFT")
 elif GIBBS == "TaylorApproxFullFH":
@@ -193,6 +161,8 @@ elif SIZE_DISPARITY == "LARGE":
         chi_AB = r.RK(0)/(N_A*N_B)**0.5
         kappa = (1.0/3.0)*chi_AB[0]
     print ("big size difference")
+
+print(chi_AB)
 
 # Using the fenics autodifferentiation toolkit 
 dgdx_a = diff(g,x_a)
@@ -229,7 +199,6 @@ else:
     print("wrong model implemented")
     sys.exit()
 
-#Compute directional derivative about u in the direction of du
 a = derivative(F, ch, dch)
 
 if SOLVER_CONFIG == "LU":
@@ -243,7 +212,7 @@ if SOLVER_CONFIG == "LU":
     solver.parameters["convergence_criterion"] = "residual"
     solver.parameters["relative_tolerance"] = 1e-10
     solver.parameters["absolute_tolerance"] = 1e-16
-    solver.parameters["relaxation_parameter"] = 0.8
+    solver.parameters["relaxation_parameter"] = 0.5
 
 elif SOLVER_CONFIG == "KRYLOV":
     class CustomSolver(NewtonSolver):
@@ -271,6 +240,7 @@ elif SOLVER_CONFIG == "KRYLOV":
 
 # Initialising the output files
 gibbs_list = []
+surface_tension = []
 # file = XDMFFile("output.xdmf")
 file = File("output.pvd", "compressed")
 
@@ -286,26 +256,38 @@ while (t < TIME_MAX):
     solver.solve(problem, ch.vector())
     timestep += 1
 
+    for i in ch.vector()[::2]:
+        if i < 0.0:
+            i == 0.0 + 1e-16
+        elif i > 1.0:
+            i == 1.0 - 1e-16
+
     # Assembling the various terms of the Landau-Ginzburg free energy functional
     homogenous_energy = assemble(g * dx())
     gradient_energy = assemble(Constant(0.5)*kappa * dot(grad(x_a), grad(x_a)) * dx())
     gibbs= homogenous_energy + gradient_energy
     gibbs_list.append(gibbs)
 
-    fpath = "./output_gibbs.csv"
-    headers = ["time", "gibbs"]
+    # Assembling the suface tension contribution
+    Gamma = assemble(kappa*dot(grad(x_a), grad(x_a))*dx())
+    surface_tension.append(Gamma)
+
+    # fpath1 = "./output_gibbs.csv"
+    fpath2 = "./output_surfacetension.csv"
+    # headers1 = ["time", "gibbs"]
+    headers2 = ["time", "Gamma"]
     end = time.time()
     print(end-start)
     # Write header row (for first timestep)
-    if not os.path.exists(fpath):
-        with open(fpath,"w") as f:
-            w = csv.DictWriter(f,headers)
+    if not os.path.exists(fpath2):
+        with open(fpath2,"w") as f:
+            w = csv.DictWriter(f,headers2)
             w.writeheader()
-    # Appending case data
-    with open(fpath, "a") as f:
-        w = csv.DictWriter(f, headers)
-        w.writerow({"time": float(t), "gibbs": float(gibbs)})
 
     if (timestep % time_stride ==0):
         # file.write (ch.split()[0], t)
         file << (ch.split()[0], t)
+        # Appending case data
+        with open(fpath2, "a") as f:
+            w = csv.DictWriter(f, headers2)
+            w.writerow({"time": float(t), "Gamma": float(Gamma)})
